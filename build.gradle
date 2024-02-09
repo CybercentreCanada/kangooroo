@@ -1,0 +1,99 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'eclipse'
+    id 'com.github.johnrengelman.shadow' version '7.0.0+'
+}
+repositories {
+    mavenCentral()
+}
+
+group 'ca.gc.cyber'
+version '1.0.8'
+
+eclipse {
+    project.natures 'org.eclipse.buildship.core.gradleprojectnature'
+}
+
+dependencies {
+
+    api 'com.browserup:browserup-proxy-core:2.1.2'
+    api('com.browserup:browserup-proxy:2.1.2') {
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+        exclude group: 'org.slf4j', module: 'slf4j-jdk14'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+
+    api 'org.yaml:snakeyaml:1.28'
+
+    api 'org.seleniumhq.selenium:selenium-api:3.141.59'
+    api 'org.seleniumhq.selenium:selenium-chrome-driver:3.141.59'
+    api 'org.seleniumhq.selenium:selenium-java:3.141.59'
+    api 'org.seleniumhq.selenium:selenium-remote-driver:3.141.59'
+    api 'org.seleniumhq.selenium:selenium-support:3.141.59'
+    api 'org.apache.httpcomponents:fluent-hc:4.5.13'
+
+    // logging dependencies
+    api 'org.apache.logging.log4j:log4j-api:2.22.0'
+    api 'org.apache.logging.log4j:log4j-core:2.22.0'
+    api 'org.apache.logging.log4j:log4j-slf4j2-impl:2.22.0'
+    api 'org.slf4j:slf4j-api:1.7.30'
+
+
+    api 'commons-cli:commons-cli:1.4'
+    api 'commons-io:commons-io:2.5'
+    api 'commons-net:commons-net:3.7.2'
+    api 'org.apache.commons:commons-lang3:3.11'
+    api 'org.apache.commons:commons-text:1.9'
+
+    api 'org.projectlombok:lombok:1.18.12'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.12.1'
+    api 'io.netty:netty-all:4.1.45.Final'
+
+
+    // be able to build with lombok annotation
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+
+    testImplementation 'junit:junit:4.12'
+    testImplementation "org.mockito:mockito-core:5.+"
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+    api('com.google.code.gson:gson:2.8.6') {
+        force = true
+    }
+
+    constraints {
+        implementation('org.apache.logging.log4j:log4j-api:2.16.0') {
+            because 'of the log4shell vulnerability'
+        }
+    }
+}
+
+
+sourceSets {
+    test.java.srcDirs = ['test/src']
+    main.java.srcDirs = ['src']
+    main.resources.srcDirs = ['resources']
+}
+
+jar {
+    zip64 = true
+    duplicatesStrategy "exclude"
+
+    manifest {
+        attributes(
+                'Main-Class': 'ca.gc.cyber.kangooroo.KangoorooStandaloneRunner',
+                'Class-Path': getProject().getConfigurations().runtimeClasspath.collect { 'lib/' + it.getName() }.join(' '),
+                'Multi-Release': true
+        )
+    }
+
+}
+
+shadowJar {
+    zip64 = true
+    archiveBaseName.set('KangoorooStandalone')
+    archiveClassifier.set('')
+    archiveVersion.set('')
+}

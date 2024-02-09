@@ -1,0 +1,7 @@
+output_folder: './output2/'
+
+kang-upstream-proxy:
+  ip: "127.0.0.1"
+  port: "8899"
+  password: "password"
+  username: "username"
