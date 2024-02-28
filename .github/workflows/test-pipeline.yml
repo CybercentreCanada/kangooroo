@@ -46,12 +46,12 @@ jobs:
         with:
           gradle-version: 7.0.2
       - run: gradle shadowJar
-      - uses: browser-actions/setup-chrome@v1.4.0
+      - uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 120
+          chrome-version: 122
       - uses: nanasess/setup-chromedriver@v2
         with:
-          chromedriver-version: '120.0.6099.109'
+          chromedriver-version: '122.0.6261.94'
       - name: Get all files ready to run Kangooroo
         run: cp /usr/local/bin/chromedriver . && mkdir output && mkdir tmp && cp build/libs/KangoorooStandalone.jar .
 
@@ -103,19 +103,84 @@ jobs:
           gradle-version: 7.0.2
       - run: gradle shadowJar
 
-      - uses: browser-actions/setup-chrome@v1.4.0
+      - uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 120
+          chrome-version: 122
 
       - uses: nanasess/setup-chromedriver@v2
         with:
-          chromedriver-version: '120.0.6099.109'
+          chromedriver-version: '122.0.6261.94'
 
       - name: Get all files ready to run Kangooroo
         run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/libs/KangoorooStandalone.jar .
 
       - name: Run Kangooroo with Proxy
         run: java -jar KangoorooStandalone.jar -cf test/integration_test/test_conf.yml --url https://duckduckgo.com/
+
+      - name: Check all output files of Kangooroo is present
+        run: |
+          ls --format=commas output2/168ce875a2188cce97924a11f6a918df/ > output2.txt
+          cmp --silent test/integration_test/assert_output_files.txt output2.txt && echo "All expected output files are present." || exit 1
+
+      - name: Check if kangooroo connected to the proxy
+        run: |
+          sleep 10
+          docker logs "${{ job.services.proxypy.id }}" >& output3.txt
+          grep -qe "duckduckgo.com:443" output3.txt
+
+      - name: Check if tmp folder is empty
+        run: ls -l tmp | grep -q "total 0" || exit 1
+      - run: cat output2/168ce875a2188cce97924a11f6a918df/results.json
+      - name: Check if result.json have expected keys
+        run: |
+          grep -qe "response_code" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "connection_success" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "requested_url" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "actual_url" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "has_timed_out" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "processing_time" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "creationDate" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "engineName" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+          grep -qe "engineVersion" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
+  
+
+  with-proxy-sandbox-integration-test:
+    name: Integration Test Kangooroo with Proxy
+    runs-on: ubuntu-latest
+
+    services:
+      proxypy:
+        image: abhinavsingh/proxy.py
+        ports:
+          - 8899:8899
+
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4.0.0
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 7.0.2
+      - run: gradle shadowJar
+
+      - uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: 122
+
+      - uses: nanasess/setup-chromedriver@v2
+        with:
+          chromedriver-version: '122.0.6261.94'
+
+      - name: Get all files ready to run Kangooroo
+        run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/libs/KangoorooStandalone.jar .
+
+      - name: Run Kangooroo with Proxy and Sandbox
+        run: java -jar KangoorooStandalone.jar --no-sandbox -cf test/integration_test/test_conf.yml --url https://duckduckgo.com/
 
       - name: Check all output files of Kangooroo is present
         run: |
