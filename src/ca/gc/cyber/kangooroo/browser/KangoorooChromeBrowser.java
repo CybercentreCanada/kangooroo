@@ -86,11 +86,19 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
     private boolean useSandbox = true;
 
+    private boolean useCaptchaSolver = false;
+
 
     public KangoorooChromeBrowser(boolean useSandbox, File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
                                   Optional<String> username, Optional<String> password) {
         super(resultFolder, tempFolder, upstreamProxy, username, password);
         this.useSandbox = useSandbox;
+    }
+
+    public KangoorooChromeBrowser(boolean useSandbox, boolean useCaptchaSolver, File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
+                                  Optional<String> username, Optional<String> password) {
+        this(useSandbox, resultFolder, tempFolder, upstreamProxy, username, password);
+        this.useCaptchaSolver = useCaptchaSolver;
     }
 
 
@@ -101,7 +109,9 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         log.info("Fetching using Chrome: " + initialURL + " [" + initialUrlMd5 + "]");
 
         RemoteWebDriver driver = createDriver(userAgent, windowSize, tempFolder);
+        AudioCaptchaSolver captchaSolver = new AudioCaptchaSolver(driver);
 
+        KangoorooResult.CaptchaResult captResult = KangoorooResult.CaptchaResult.NONE;
         Pair<Har, URL> pair = null;
         try {
             driver.getWindowHandle();
@@ -112,14 +122,20 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             // open the webpage
             Har har = get(driver, initialURL.toExternalForm(), tempFolder);
 
+            if (useCaptchaSolver) {
+                captResult = captchaSolver.removeCaptcha(tempFolder);
+            }
+
             // process result, get favicon, screenshots etc
             pair = processResult(har, userAgent, driver, tempFolder, resultFolder);
 
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             driver.quit();
         }
 
-        return new KangoorooResult(pair);
+        return new KangoorooResult(pair, captResult);
 
     }
 

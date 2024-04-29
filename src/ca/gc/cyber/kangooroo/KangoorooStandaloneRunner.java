@@ -85,10 +85,12 @@ public class KangoorooStandaloneRunner {
         return webpageReport;
     }
 
-    private static void runKangooroo( boolean useSandbox, File urlOutputDir, File urlTempDir,
+    private static void runKangooroo( boolean useSandbox, boolean useCaptchaSolver, File urlOutputDir, File urlTempDir,
                                      KangoorooRunnerConf configuration, URL crawlUrl, String windowSize, String userAgent)
             throws IOException {
-        KangoorooBrowser browser = new KangoorooChromeBrowser(useSandbox,
+
+
+        KangoorooBrowser browser = new KangoorooChromeBrowser(useSandbox, useCaptchaSolver,
                 urlOutputDir, urlTempDir, configuration.getOptionalUpstreamProxyAddress(),
                 configuration.getOptionalUpstreamProxyUsername(),
                 configuration.getOptionalUpstreamProxyPassword());
@@ -138,10 +140,12 @@ public class KangoorooStandaloneRunner {
  ;
         Option confFileOption = new Option("cf", "conf-file", true, "Specify specific configuration file location.");
         Option noSandboxOption = new Option("ns", "no-sandbox", false, "Enable the --no-sandbox option in Chrome options.");
+        Option captchaSolverOption = new Option("uc", "use-captcha-solver", false, "Enable captcha solver.");
 
         options.addOption(helpOption);
         options.addOption(urlTypeOption);
         options.addOption(urlOption);
+        options.addOption(captchaSolverOption);
 
         options.addOption(confFileOption);
         options.addOption(noSandboxOption);
@@ -211,10 +215,16 @@ public class KangoorooStandaloneRunner {
         URLType type = URLType.PHISHING;
 
         boolean useSandbox = !params.hasOption("no-sandbox");
+        boolean useCaptchaSolver = params.hasOption("use-captcha-solver");
 
         if (!useSandbox) {
             getLogger().warn("We are running chrome with --no-sandbox option.");
         }
+
+        if (useCaptchaSolver) {
+            getLogger().info("We are using Captcha solver. Make sure that Whisper AI is configured on the computer.");
+        }
+
 
 
         if (params.hasOption("url-type")) {
@@ -278,7 +288,7 @@ public class KangoorooStandaloneRunner {
         }
 
         try {
-            runKangooroo( useSandbox, urlOutputDir, urlTempDir, configuration, crawlUrl, windowSize, userAgent);
+            runKangooroo( useSandbox, useCaptchaSolver, urlOutputDir, urlTempDir, configuration, crawlUrl, windowSize, userAgent);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
