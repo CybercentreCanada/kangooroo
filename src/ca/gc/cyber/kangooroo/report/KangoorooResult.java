@@ -16,9 +16,19 @@ public final class KangoorooResult {
 
     private final Pair<Har, URL> urlHar;
 
+    private CaptchaResult captchaResult = CaptchaResult.NONE;
+
+    public enum CaptchaResult {
+        CAPTCHA_SOLVED, CAPTCHA_BLOCKED, CAPTCHA_FAILED, NO_CAPTCHA, IS_HCAPTCHA, NONE
+    }
+
     public KangoorooResult(Pair<Har, URL> har) {
         this.urlHar = har;
+    }
 
+    public KangoorooResult(Pair<Har, URL> har, CaptchaResult captchaResult) {
+        this(har);
+        this.captchaResult = captchaResult;
     }
 
     public boolean isConnectionSuccess() {

@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -207,14 +208,15 @@ public class KangoorooStandaloneRunnerTest {
             KangoorooStandaloneRunner.main(new String[]{"-u", urlString});
 
             assertTrue("Use sandbox mode is default ON", (Boolean) constructorArgs.get(0));
+            assertFalse("Use captcha solver option is default OFF", (Boolean) constructorArgs.get(1));
             assertTrue("There should be a folder of outputDir/{url_md5}.", (new File(outputDir, urlMd5)).exists());
 
             // make sure kangooroo chromedriver is set up with the correct arguments
-            assertEquals(new File(outputDir, urlMd5), constructorArgs.get(1));
-            assertEquals(new File(tempDir, urlMd5), constructorArgs.get(2));
-            assertEquals(Optional.empty(), constructorArgs.get(3));
+            assertEquals(new File(outputDir, urlMd5), constructorArgs.get(2));
+            assertEquals(new File(tempDir, urlMd5), constructorArgs.get(3));
             assertEquals(Optional.empty(), constructorArgs.get(4));
             assertEquals(Optional.empty(), constructorArgs.get(5));
+            assertEquals(Optional.empty(), constructorArgs.get(6));
 
         }
     }
@@ -246,14 +248,15 @@ public class KangoorooStandaloneRunnerTest {
 
 
             assertTrue("Use sandbox mode is default ON", (Boolean) constructorArgs.get(0));
+            assertFalse("Use captcha solver option is default OFF", (Boolean) constructorArgs.get(1));
             assertTrue("There should be a folder of outputDir/{url_md5}.", (new File(testOutputDir, urlMd5)).exists());
 
             // make sure kangooroo chromedriver is set up with the correct arguments
-            assertEquals(new File(testOutputDir, urlMd5), constructorArgs.get(1));
-            assertEquals(new File(tempDir, urlMd5), constructorArgs.get(2));
-            assertEquals(Optional.empty(), constructorArgs.get(3));
+            assertEquals(new File(testOutputDir, urlMd5), constructorArgs.get(2));
+            assertEquals(new File(tempDir, urlMd5), constructorArgs.get(3));
             assertEquals(Optional.empty(), constructorArgs.get(4));
             assertEquals(Optional.empty(), constructorArgs.get(5));
+            assertEquals(Optional.empty(), constructorArgs.get(6));
 
         }
     }
@@ -334,11 +337,11 @@ public class KangoorooStandaloneRunnerTest {
 
 
             // make sure kangooroo chromedriver is set up with the correct arguments
-            Optional<InetSocketAddress> proxyAddress = (Optional<InetSocketAddress>) constructorArgs.get(3);
+            Optional<InetSocketAddress> proxyAddress = (Optional<InetSocketAddress>) constructorArgs.get(4);
             assertEquals(proxyAddress.get().getPort(), 12345);
             assertEquals(proxyAddress.get().getHostString(), "127.0.0.1");
-            assertEquals(Optional.empty(), constructorArgs.get(4));
             assertEquals(Optional.empty(), constructorArgs.get(5));
+            assertEquals(Optional.empty(), constructorArgs.get(6));
 
         }
     }
