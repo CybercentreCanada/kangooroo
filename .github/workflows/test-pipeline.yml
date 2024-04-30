@@ -48,10 +48,10 @@ jobs:
       - run: gradle shadowJar
       - uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 122
+          chrome-version: 124
       - uses: nanasess/setup-chromedriver@v2
         with:
-          chromedriver-version: '122.0.6261.94'
+          chromedriver-version: '124.0.6367.91'
       - name: Get all files ready to run Kangooroo
         run: cp /usr/local/bin/chromedriver . && mkdir output && mkdir tmp && cp build/libs/KangoorooStandalone.jar .
 
@@ -105,11 +105,11 @@ jobs:
 
       - uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 122
+          chrome-version: 124
 
       - uses: nanasess/setup-chromedriver@v2
         with:
-          chromedriver-version: '122.0.6261.94'
+          chromedriver-version: '124.0.6367.91'
 
       - name: Get all files ready to run Kangooroo
         run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/libs/KangoorooStandalone.jar .
@@ -170,11 +170,11 @@ jobs:
 
       - uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 122
+          chrome-version: 124
 
       - uses: nanasess/setup-chromedriver@v2
         with:
-          chromedriver-version: '122.0.6261.94'
+          chromedriver-version: '124.0.6367.91'
 
       - name: Get all files ready to run Kangooroo
         run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/libs/KangoorooStandalone.jar .
