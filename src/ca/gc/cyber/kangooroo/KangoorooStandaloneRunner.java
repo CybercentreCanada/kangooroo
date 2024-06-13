@@ -5,13 +5,17 @@ import ca.gc.cyber.kangooroo.browser.KangoorooBrowser;
 import ca.gc.cyber.kangooroo.browser.KangoorooChromeBrowser;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 import ca.gc.cyber.kangooroo.report.WebpageReport;
+import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -26,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
 import com.browserup.harreader.model.HarHeader;
 import com.google.gson.Gson;
@@ -37,6 +42,10 @@ public class KangoorooStandaloneRunner {
     private static final String RESOURCES_CONF = "/conf.yml";
     protected static final String ENGINE_NAME = "Standalone-Kangooroo";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    private static final Set<String> ALLOWED_MODULES = Set.of("captcha", "file_hash", "summary");
+
+    private static Set<String> enabledModules = new HashSet<>();
 
 
     public enum URLType {
@@ -100,9 +109,17 @@ public class KangoorooStandaloneRunner {
         long processingTime = System.currentTimeMillis() - start;
         browser.browserShutdown();
 
+        createKangoorooOutput(urlOutputDir, configuration, crawlUrl, res, processingTime);
+    }
+
+    private static void createKangoorooOutput(File urlOutputDir, KangoorooRunnerConf configuration, URL crawlUrl, KangoorooResult res, long processingTime) throws IOException {
         var report = generateReport(crawlUrl, res, processingTime, configuration.getVersion());
 
-        File resultFile = new java.io.File(urlOutputDir, "results.json");
+        File harSanitizedFile = new File(urlOutputDir,  "sanitized.har");
+        Har sanitizedHar = HarUtils.removeContent(res.getHar(), true, true);
+        HarUtils.writeFile(sanitizedHar, harSanitizedFile);
+
+        File resultFile = new File(urlOutputDir, "results.json");
         FileUtils.writeStringToFile(resultFile, GSON.toJson(report), java.nio.charset.StandardCharsets.UTF_8);
     }
 
@@ -142,6 +159,20 @@ public class KangoorooStandaloneRunner {
         Option noSandboxOption = new Option("ns", "no-sandbox", false, "Enable the --no-sandbox option in Chrome options.");
         Option captchaSolverOption = new Option("uc", "use-captcha-solver", false, "Enable captcha solver.");
 
+        Option notSanitizeSessionOption = new Option("nss", "not-sanitize-session", false, "Do NOT remove content from HAR file and store in report.json.");
+        Option notSaveFilesOption = new Option("nsf", "not-save-file", false, "Do NOT save favicon.ico, website source, and screenshot to separate file.");
+        Option notSaveHarOption = new Option("nsh", "not-save-har", false, "Do NOT save original HAR as separate file.");
+        Option modulesOption = new Option("mod", "modules", true, "Use modules");
+
+
+        // NEW OPTIONS //
+        options.addOption(notSanitizeSessionOption);
+        options.addOption(notSaveFilesOption);
+        options.addOption(notSaveHarOption);
+        options.addOption(modulesOption);
+        // NEW OPTIONS //
+
+
         options.addOption(helpOption);
         options.addOption(urlTypeOption);
         options.addOption(urlOption);
@@ -167,6 +198,29 @@ public class KangoorooStandaloneRunner {
             getLogger().error("--url URL is missing.");
             return;
         }
+
+
+
+        if (params.hasOption("modules")) {
+            var modules = params.getOptionValue("modules").split(",");
+
+            for (var mod : modules) {
+                if (ALLOWED_MODULES.contains(mod)) {
+                    enabledModules.add(mod);
+                } else {
+                    log.error("Module: [" + mod + "] is not an allowed module.");
+                    return ;
+                }
+            }
+
+        }
+
+
+        if (1 == 1) {
+            return ;
+        }
+
+
 
         KangoorooRunnerConf configuration = null;
         //load new configuration if exist
@@ -213,6 +267,11 @@ public class KangoorooStandaloneRunner {
 
         String urlStr = params.getOptionValue("url");
         URLType type = URLType.PHISHING;
+
+        boolean sanitizeSession = ! params.hasOption("not-sanitize-session");
+        boolean saveOriginalHar = ! params.hasOption("not-save-har");
+        boolean saveFiles = ! params.hasOption("not-save-files");
+
 
         boolean useSandbox = !params.hasOption("no-sandbox");
         boolean useCaptchaSolver = params.hasOption("use-captcha-solver");
@@ -293,7 +352,8 @@ public class KangoorooStandaloneRunner {
             e.printStackTrace();
         } finally {
             // cleanup leftover files in the temporary directory
-            FileUtils.deleteQuietly(urlTempDir);
+//            FileUtils.deleteQuietly(urlTempDir);
+            log.info("Should delte temp folder");
         }
 
     }

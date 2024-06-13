@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.littleshoot.proxy.HttpFilters;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
@@ -74,6 +76,7 @@ public abstract class KangoorooBrowser {
 
         displayResources(result.getHar());
         saveHar(result.getHar(), resultFolder);
+        packageFileDownloaded(result.getHar());
 
         return result;
     }
@@ -143,6 +146,58 @@ public abstract class KangoorooBrowser {
             }
         } else {
             FileUtils.writeStringToFile(outputFile, entry.getResponse().getContent().getText(), StandardCharsets.UTF_8);
+        }
+    }
+
+    protected void packageFileDownloaded(Har har) {
+        try {
+            File[] downloadedFiles = tempFolder.listFiles();
+
+            if (downloadedFiles.length > 0) {
+                log.info("File downloaded detected!");
+                boolean containsPartiallyDownloadedFile = Arrays.stream(downloadedFiles)
+                        .anyMatch(file -> file.getName()
+                                .endsWith(".crdownload"));
+                if (containsPartiallyDownloadedFile) {
+                    try {
+                        log.warn("At least 1 partially downloaded file has been detected, waiting 10 seconds and retrying..");
+                        for (File f : downloadedFiles) {
+                            log.warn("- " + f);
+                        }
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+
+            boolean containsPartiallyDownloadedFile = Arrays.stream(downloadedFiles)
+                    .anyMatch(file -> file.getName().endsWith(".crdownload"));
+            if (containsPartiallyDownloadedFile) {
+                /*
+                 * Not sure why it is happening. If a file is huge, we don't get the handle until it is really fully downloaded. But sometimes, we get the handle, but we still have a .crdownload file.
+                 */
+                log.warn("A file has been partially downloaded and is still not finished after 10 seconds, ignoring.");
+            } else if (downloadedFiles.length > 1) {
+                log.error("We have more than 1 file downloaded, how is that possible ??");
+
+
+                for (File f: downloadedFiles) {
+                    String md5 = DigestUtils.md5Hex( FileUtils.readFileToByteArray(f));
+                    log.info("md5 of download file: " + md5);
+                }
+
+                throw new RuntimeException("More than 1 file has been downloaded");
+            } else if (downloadedFiles.length == 1) {
+                String md5 = DigestUtils.md5Hex( FileUtils.readFileToByteArray(downloadedFiles[0]));
+
+                removeDownloadedContent(har, md5);
+            }
+        } catch (Throwable t) {
+            Throwable cause = ExceptionUtils.getRootCause(t);
+            Throwable rootCause = cause != null ? cause : t;
+            log.warn("Unable to package the downloaded file due to " + rootCause.getClass()
+                    .getSimpleName() + ": " + rootCause.getMessage(), true);
+
         }
     }
 
