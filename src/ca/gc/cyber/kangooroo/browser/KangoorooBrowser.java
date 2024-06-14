@@ -2,6 +2,7 @@ package ca.gc.cyber.kangooroo.browser;
 
 
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
+import ca.gc.cyber.kangooroo.utils.log.MessageLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +40,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import lombok.Getter;
 
 public abstract class KangoorooBrowser {
 
@@ -54,6 +56,9 @@ public abstract class KangoorooBrowser {
     protected Optional<String> username;
     protected Optional<String> password;
 
+    @Getter
+    protected MessageLog messageLog = new MessageLog();
+
 
     public KangoorooBrowser(File resultFolder, File tempFolder) {
         this(resultFolder, tempFolder, Optional.empty(), Optional.empty(), Optional.empty());
@@ -68,6 +73,7 @@ public abstract class KangoorooBrowser {
         this.upstreamProxy = upstreamProxy;
         this.username = username;
         this.password = password;
+        
     }
 
 
@@ -75,8 +81,6 @@ public abstract class KangoorooBrowser {
         KangoorooResult result = execute(initialURL, windowSize, userAgent);
 
         displayResources(result.getHar());
-        saveHar(result.getHar(), resultFolder);
-        packageFileDownloaded(result.getHar());
 
         return result;
     }
