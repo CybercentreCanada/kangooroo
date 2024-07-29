@@ -1,4 +1,5 @@
-# Kangooroo
+# ![kangooroo_with_title](https://github.com/CybercentreCanada/kangooroo/assets/148795333/db3f342c-21a4-42b9-92eb-53dd6b4b7cb0)
+
 
 ## Description
 

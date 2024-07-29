@@ -76,7 +76,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
     private static final File CHROME_DRIVER_EXECUTABLE = new File("chromedriver");
     private static final int DEFAULT_PAGE_LOAD_TIMEOUT = 60;
     private static final int MAX_SCREENSHOT_HEIGHT = 10_000;
-    private static final CaptureType[] CAPTURE_TYPES = new CaptureType[]{
+    private static final CaptureType[] CAPTURE_TYPES = new CaptureType[] {
             CaptureType.REQUEST_HEADERS,
             CaptureType.RESPONSE_CONTENT,
             CaptureType.RESPONSE_HEADERS,
@@ -86,13 +86,28 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
     private boolean useSandbox = true;
 
+    private boolean useCaptchaSolver = false;
 
-    public KangoorooChromeBrowser(boolean useSandbox, File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
-                                  Optional<String> username, Optional<String> password) {
+    private boolean saveOutputFiles = true;
+
+    public KangoorooChromeBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
+            Optional<String> username, Optional<String> password, boolean useSandbox) {
         super(resultFolder, tempFolder, upstreamProxy, username, password);
         this.useSandbox = useSandbox;
     }
 
+    public KangoorooChromeBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
+            Optional<String> username, Optional<String> password, boolean useSandbox, boolean useCaptchaSolver) {
+        this(resultFolder, tempFolder, upstreamProxy, username, password, useSandbox);
+        this.useCaptchaSolver = useCaptchaSolver;
+    }
+
+    public KangoorooChromeBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
+            Optional<String> username, Optional<String> password, boolean useSandbox, boolean useCaptchaSolver,
+            boolean saveOutputFiles) {
+        this(resultFolder, tempFolder, upstreamProxy, username, password, useSandbox, useCaptchaSolver);
+        this.saveOutputFiles = saveOutputFiles;
+    }
 
     @Override
     protected KangoorooResult execute(URL initialURL, String windowSize, String userAgent) {
@@ -101,7 +116,9 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         log.info("Fetching using Chrome: " + initialURL + " [" + initialUrlMd5 + "]");
 
         RemoteWebDriver driver = createDriver(userAgent, windowSize, tempFolder);
+        AudioCaptchaSolver captchaSolver = new AudioCaptchaSolver(driver);
 
+        KangoorooResult.CaptchaResult captResult = KangoorooResult.CaptchaResult.NONE;
         Pair<Har, URL> pair = null;
         try {
             driver.getWindowHandle();
@@ -112,20 +129,26 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             // open the webpage
             Har har = get(driver, initialURL.toExternalForm(), tempFolder);
 
+            if (useCaptchaSolver) {
+                captResult = captchaSolver.removeCaptcha(tempFolder);
+            }
+
             // process result, get favicon, screenshots etc
             pair = processResult(har, userAgent, driver, tempFolder, resultFolder);
 
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             driver.quit();
         }
 
-        return new KangoorooResult(pair);
+        return new KangoorooResult(pair, captResult);
 
     }
 
-
     /**
-     * After making connection to the webpage, get source html, screenshot, and favicon.
+     * After making connection to the webpage, get source html, screenshot, and
+     * favicon.
      *
      * @param har
      * @param userAgent
@@ -134,13 +157,15 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      * @param resultFolder
      * @return
      */
-    protected Pair<Har, URL> processResult(Har har, String userAgent, RemoteWebDriver driver, File tmpDownloadFolder, File resultFolder) {
+    protected Pair<Har, URL> processResult(Har har, String userAgent, RemoteWebDriver driver, File tmpDownloadFolder,
+            File resultFolder) {
         log.info("Fetch done, processing the results..");
         if (HarUtils.isConnectionSuccess(har)) {
 
             // First check
             if (isUnresponsive(driver, 5)) {
                 log.warn("Chromium is unresponsive");
+                messageLog.warn( "Chromium is unresponsive");
                 return Pair.of(har, null);
             }
 
@@ -173,7 +198,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                             .getRequest()
                             .getUrl()) : null;
                 } else if (driver.getCurrentUrl().startsWith("about:blank")) {
-                    log.warn("The current URL on the address bar is the about page.. This link may be a download or Chromium did not send the last request.");
+                    log.warn(
+                            "The current URL on the address bar is the about page.. This link may be a download or Chromium did not send the last request.");
                     actualUrl = firstNotRedirectedEntry != null ? new URL(HarUtils.getFirstEntryNotRedirected(har)
                             .getRequest()
                             .getUrl()) : null;
@@ -187,23 +213,30 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             log.debug("Number of tabs after execution: " + driver.getWindowHandles()
                     .size()); // Future use: detect popups
 
-            savePageSource(driver, resultFolder);
-            getFavicon(driver, userAgent, resultFolder);
-            takeScreenshots(driver, resultFolder);
+            if (this.saveOutputFiles) {
+                log.info("We are saving page source, favicon, and screenshot.");
+                savePageSource(driver, resultFolder);
+                getFavicon(driver, userAgent, resultFolder);
+                takeScreenshots(driver, resultFolder);
+            } else {
+                log.info("We are not saving any files.");
+            }
 
             log.info("Finish processing results.");
 
             return Pair.of(har, actualUrl);
         } else {
             log.warn("Unable to connect");
+            messageLog.warn("Unable to connect.");
             return Pair.of(har, null);
         }
     }
 
-
     /**
-     * This method take care of restarting everything if the chrome driver does not come back after the timeout specified
-     * This method also returns the HAR object that records all network interaction with the website
+     * This method take care of restarting everything if the chrome driver does not
+     * come back after the timeout specified
+     * This method also returns the HAR object that records all network interaction
+     * with the website
      */
     private Har get(WebDriver driver, String url, File downloadFolder) {
         BrowserUpProxy proxy = getPROXY();
@@ -218,13 +251,13 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             hasTimedOut = true;
         } catch (WebDriverException e) {
             log.warn("WebDriverException exception caught", e);
+            messageLog.warn("WebDriverException exception caught " + e.getMessage());
         }
 
         driver.manage().timeouts().pageLoadTimeout(5, TimeUnit.SECONDS);
 
         return proxy.endHar();
     }
-
 
     /**
      * Try to download favicon from the website if present
@@ -235,7 +268,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      */
     private void getFavicon(RemoteWebDriver driver, String userAgent, File resultFolder) {
         try {
-            // Check if the current page is really a webpage, and not something starting by "data:..."
+            // Check if the current page is really a webpage, and not something starting by
+            // "data:..."
             if (!driver.getCurrentUrl().startsWith("http")) {
                 return;
             }
@@ -277,6 +311,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                 } catch (IOException e) {
                     log.debug(e.getMessage());
                     log.warn("Cannot download Favicon.");
+                    messageLog.warn("Cannot download Favicon.");
                 }
             }
 
@@ -288,11 +323,12 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         } catch (Throwable t) {
             Throwable cause = ExceptionUtils.getRootCause(t);
             Throwable rootCause = cause != null ? cause : t;
-            log.warn("Unable to download the favicon due to " + rootCause.getClass()
+            log.error("Unable to download the favicon due to " + rootCause.getClass()
                     .getSimpleName() + ": " + rootCause.getMessage());
+            messageLog.error("Unable to download the favicon due to " + rootCause.getClass()
+                    .getSimpleName() + ": " + rootCause.getMessage());           
         }
     }
-
 
     /**
      * Save the source html of the current webpage
@@ -302,17 +338,20 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      */
     private void savePageSource(RemoteWebDriver driver, File resultFolder) {
         File page = new File(resultFolder, "source.html");
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(page), StandardCharsets.UTF_8))) {
+        try (Writer writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(page), StandardCharsets.UTF_8))) {
             log.debug("Saving page content to " + page);
             writer.write(driver.getPageSource());
         } catch (Throwable t) {
             Throwable cause = ExceptionUtils.getRootCause(t);
             Throwable rootCause = cause != null ? cause : t;
-            log.warn("Unable to save the main page due to " + rootCause.getClass()
+            log.error("Unable to save the main page due to " + rootCause.getClass()
                     .getSimpleName() + ": " + rootCause.getMessage(), true);
+            messageLog.error("Unable to save the main page due to " + rootCause.getClass()
+                    .getSimpleName() + ": " + rootCause.getMessage());
+
         }
     }
-
 
     private void displayConsoleLog(RemoteWebDriver driver) {
         LogEntries logEntries = driver.manage().logs().get(LogType.BROWSER);
@@ -322,7 +361,6 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             }
         }
     }
-
 
     /**
      * Take screenshot of the current webpage and store it in resultFolder
@@ -365,21 +403,27 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
                 if (screenshotFile.exists()) {
                     if (height > MAX_SCREENSHOT_HEIGHT) {
-                        log.warn("The height of the screenshot truncated to " + MAX_SCREENSHOT_HEIGHT + "px (instead of " + height + "px)", true);
+                        log.warn("The height of the screenshot truncated to " + MAX_SCREENSHOT_HEIGHT
+                                + "px (instead of " + height + "px)", true);
+                        messageLog.warn("The height of the screenshot truncated to " + MAX_SCREENSHOT_HEIGHT
+                                + "px (instead of " + height + "px)");
                     }
                     log.debug("Successful capture of screenshot of " + windowHandle);
                 } else {
                     log.error("Failed to capture screenshot of " + windowHandle);
+                    messageLog.error( "Failed to capture screenshot of " + windowHandle);
                 }
             }
         } catch (Throwable t) {
             Throwable cause = ExceptionUtils.getRootCause(t);
             Throwable rootCause = cause != null ? cause : t;
-            log.warn("Unable to take screenshots due to " + rootCause.getClass()
+            
+            log.error("Unable to take screenshots due to " + rootCause.getClass()
                     .getSimpleName() + ": " + rootCause.getMessage(), true);
+            messageLog.error("Unable to take screenshots due to " + rootCause.getClass()
+                    .getSimpleName() + ": " + rootCause.getMessage());
         }
     }
-
 
     private int getDocumentHeight(RemoteWebDriver driver) {
         return ((Number) driver.executeScript("return Math.max("
@@ -389,7 +433,6 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                 + "document.documentElement.scrollHeight, "
                 + "document.documentElement.offsetHeight);")).intValue();
     }
-
 
     /**
      * We try to remove an alert on the browser if present
@@ -410,7 +453,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             } catch (NoAlertPresentException e) {
                 return true;
             } catch (TimeoutException e) {
-                log.warn("Timeout while trying to detect an alert box");
+                log.info("Timeout while trying to detect an alert box");
                 return true;
             }
         } while (alertClosed);
@@ -418,9 +461,9 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         return true;
     }
 
-
     /**
-     * We inject a command on the ChromeDriver that will tell Chromium how to deal with a downloaded file
+     * We inject a command on the ChromeDriver that will tell Chromium how to deal
+     * with a downloaded file
      *
      * @param driver
      * @param downloadFolder
@@ -451,7 +494,6 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         }
     }
 
-
     /**
      * setting up chromedriver with required arguments.
      *
@@ -468,7 +510,6 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         logPrefs.enable(LogType.BROWSER, Level.ALL);
 
         ChromeOptions options = new ChromeOptions();
-
 
         // https://chromium.googlesource.com/chromium/src/+/master/chrome/common/chrome_switches.cc
         // https://chromium.googlesource.com/chromium/src/+/master/headless/app/headless_shell_switches.cc
@@ -500,7 +541,6 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.setCapability(CapabilityType.LOGGING_PREFS, logPrefs);
         options.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR, UnexpectedAlertBehaviour.ACCEPT);
 
-
         ChromeDriverService service = new ChromeDriverService.Builder()
                 .usingDriverExecutable(CHROME_DRIVER_EXECUTABLE)
                 .withSilent(true)
@@ -511,8 +551,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
         CustomChromeDriver driver = null;
 
-
-        // Sometimes Chrome is unable to start due to a bug, and it should work again if we simply retry
+        // Sometimes Chrome is unable to start due to a bug, and it should work again if
+        // we simply retry
         int retry = 0;
         while (driver == null) {
             try {
@@ -522,6 +562,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                     throw e;
                 } else {
                     log.warn("Unable to start Chrome, trying again..", e);
+                    messageLog.warn( "Unable to start Chrome, trying again.." + e.getMessage());
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e1) {
@@ -537,7 +578,6 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
         return driver;
     }
-
 
     private boolean isUnresponsive(WebDriver driver, int timeoutInSeconds) {
         try {
@@ -555,10 +595,10 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         }
     }
 
-
     /**
      * The ChromeDriver creates a temporary folder for extensions.
-     * We can't control the location of this folder, we need to clean it once in a while.
+     * We can't control the location of this folder, we need to clean it once in a
+     * while.
      */
     private static void cleanExtensionDirectory() {
         log.debug("Cleaning Chromium extension temporary folders...");
@@ -566,8 +606,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         var processBuilder = new ProcessBuilder(
                 "/bin/sh",
                 "-c",
-                "find /tmp/.org.chromium* -type d -cmin +60 -exec rm -rf {} \\;"
-        );
+                "find /tmp/.org.chromium* -type d -cmin +60 -exec rm -rf {} \\;");
 
         try {
             var process = processBuilder.start();
@@ -583,15 +622,14 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         }
     }
 
-
     @Override
     protected CaptureType[] getHarCaptureTypes() {
         return CAPTURE_TYPES;
     }
 
-
     /**
-     * We created a special font called 'MergeFont' to show all the special characters that we need.
+     * We created a special font called 'MergeFont' to show all the special
+     * characters that we need.
      * You can use this method to check that the font is actually ued by Chromium.
      */
     public final void checkEnvironment() {
@@ -628,14 +666,17 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             RemoteWebDriver driver = createDriver("", "", new File("tmp"));
             driver.get("file:///" + Paths.get("etc", "unicode-test.html").toAbsolutePath());
             ChromeExtender ex = new ChromeExtender((CustomChromeDriver) driver);
-            Set<String> fonts = ex.getRenderedFonts("dd"); // dd is the element <dd>...</dd> as seen in the unicode-test.html page
+            Set<String> fonts = ex.getRenderedFonts("dd"); // dd is the element <dd>...</dd> as seen in the
+                                                           // unicode-test.html page
             if (fonts.size() == 1 && fonts.iterator().next().equals("MergedFont")) {
                 log.info("Environment check done, MergedFont properly installed");
             } else {
-                throw new IllegalStateException("Chromium is not using MergedFont to display all the characters in unicode-test.html");
+                throw new IllegalStateException(
+                        "Chromium is not using MergedFont to display all the characters in unicode-test.html");
             }
 
-            // Flag to avoid having to always make this verification each time Kangooroo restarts
+            // Flag to avoid having to always make this verification each time Kangooroo
+            // restarts
             FileUtils.touch(checkFile);
         } catch (IOException e) {
             throw new IllegalStateException(e.getMessage());
