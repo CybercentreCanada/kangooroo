@@ -61,12 +61,6 @@ jobs:
       - name: Run Kangooroo with default settings
         run: ./bin/kangooroo -mods summary --url https://duckduckgo.com/
 
-      - name: Debug Time!
-        run: ls 
-      
-      - name: Debug Time!
-        run: ls output/168ce875a2188cce97924a11f6a918df/
-
       - name: Check all output files of Kangooroo is present
         run: |
           ls --format=commas output/168ce875a2188cce97924a11f6a918df/ > output1.txt
@@ -74,10 +68,6 @@ jobs:
       - name: Check if tmp folder is empty
         run: ls -l tmp | grep -q "total 0" || exit 1
 
-      - name: Debug Time!
-        run: cat output/168ce875a2188cce97924a11f6a918df/results.json
-
-      
       - name: Check if result.json have expected keys
         run: |
           grep -qe "response_code" output/168ce875a2188cce97924a11f6a918df/results.json || exit 1
