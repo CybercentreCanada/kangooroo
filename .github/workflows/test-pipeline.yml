@@ -135,7 +135,6 @@ jobs:
 
       - name: Check if tmp folder is empty
         run: ls -l tmp | grep -q "total 0" || exit 1
-      - run: cat output2/168ce875a2188cce97924a11f6a918df/results.json
       - name: Check if result.json have expected keys
         run: |
           grep -qe "response_code" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
@@ -203,7 +202,6 @@ jobs:
 
       - name: Check if tmp folder is empty
         run: ls -l tmp | grep -q "total 0" || exit 1
-      - run: cat output2/168ce875a2188cce97924a11f6a918df/results.json
       - name: Check if result.json have expected keys
         run: |
           grep -qe "response_code" output2/168ce875a2188cce97924a11f6a918df/results.json || exit 1
