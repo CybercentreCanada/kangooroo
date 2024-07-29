@@ -3,6 +3,7 @@ package ca.gc.cyber.kangooroo.report;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 
 import java.net.URL;
+import java.util.Date;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -26,13 +27,26 @@ public final class KangoorooResult {
         this.urlHar = har;
     }
 
+    public KangoorooResult(Har har, URL url) {
+        this.urlHar = Pair.of(har, url);
+    }
+
     public KangoorooResult(Pair<Har, URL> har, CaptchaResult captchaResult) {
         this(har);
         this.captchaResult = captchaResult;
     }
 
+    public KangoorooResult(Har har, URL url, CaptchaResult captchaResult) {
+        this(har, url);
+        this.captchaResult = captchaResult;
+    }
+
     public boolean isConnectionSuccess() {
         return HarUtils.isConnectionSuccess(getHar());
+    }
+
+    public Date getStartTime() {
+        return HarUtils.getStartTime(getHar());
     }
 
 

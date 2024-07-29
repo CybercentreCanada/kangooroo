@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-release-jar:
-    name: build and release Kangooroo ShadowJar
+    name: build and release Kangooroo Distribution
     runs-on: ubuntu-latest
 
     steps:
@@ -26,11 +26,9 @@ jobs:
         uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 7.0.2
-      - run: gradle shadowJar
       - run: gradle distZip
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: | 
-            build/libs/KangoorooStandalone.jar
             build/distribution/*

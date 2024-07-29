@@ -2,6 +2,8 @@ package ca.gc.cyber.kangooroo.utils.io.net.http;
 
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLRedirection;
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLUtils;
+import ca.gc.cyber.kangooroo.KangoorooStandaloneRunner.URLType;
+import ca.gc.cyber.kangooroo.utils.data.FileHashes;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +14,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +26,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +133,15 @@ public class HarUtils {
             return har.getLog().getEntries().get(0).getResponse().getStatus() != 0;
         }
         return false;
+    }
+
+    public static Date getStartTime(Har har) {
+        if (har.getLog().getEntries().size() > 0) {
+            return har.getLog().getEntries().get(0).getStartedDateTime();
+        }
+        return null;
+
+
     }
 
 
@@ -310,8 +325,10 @@ public class HarUtils {
         }
         for (HarEntry entry : sanitizedHar.getLog().getEntries()) {
             if (entry.getResponse().getContent() != null && entry.getResponse().getContent().getText() != null) {
+                
                 if (entry.getResponse().getContent().getComment() != null &&
                         entry.getResponse().getContent().getComment().startsWith("removed")) {
+                            log.error("entry.getResponse().getContent().getComment() != null");
                     continue; // already removed
                 }
                 if (generateContentMD5) {
@@ -326,7 +343,7 @@ public class HarUtils {
                         }
                     } else {
                         md5 = DigestUtils.md5Hex(entry.getResponse().getContent().getText());
-                    }
+                    };
                     entry.getResponse().getContent().setComment("removed;md5:" + md5);
                 }
 
@@ -336,6 +353,42 @@ public class HarUtils {
         }
         return sanitizedHar;
     }
+
+    public static Map<String, FileHashes> getEntryFileHashes(Har har) throws IOException {
+        Map<String, FileHashes> contentHashMap = new HashMap<>();
+        
+        for (HarEntry entry : har.getLog().getEntries()) {
+            if (entry.getResponse().getContent() != null && entry.getResponse().getContent().getText() != null) {
+                
+                String url = entry.getRequest().getUrl();
+                FileHashes hash = null;
+                if (entry.getResponse().getContent().getEncoding() != null &&
+                        entry.getResponse().getContent().getEncoding().equals("base64")) {
+                    try (InputStream inputStream = Base64.getDecoder()
+                            .wrap(IOUtils.toInputStream(entry.getResponse()
+                                    .getContent()
+                                    .getText(), StandardCharsets.UTF_8))) {
+
+                        
+                        hash = new FileHashes(DigestUtils.md5Hex(inputStream), DigestUtils.sha1Hex(inputStream), DigestUtils.sha256Hex(inputStream));
+                        
+
+                    }
+                } else {
+                    var contentStr  = entry.getResponse().getContent().getText();
+                    // DigestUtils.md5Hex(entry.getResponse().getContent().getText());
+                    hash = new FileHashes(DigestUtils.md5Hex(contentStr), DigestUtils.sha1Hex(contentStr), DigestUtils.sha256Hex(contentStr));
+                };
+                contentHashMap.put(url, hash);
+
+            }
+        }
+
+        return contentHashMap;
+    }
+
+
+    
 
 
     public static void displayEntries(Har har) {
@@ -347,4 +400,8 @@ public class HarUtils {
                     .getMimeType() + ")");
         }
     }
+
+
+
+
 }
