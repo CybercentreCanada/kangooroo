@@ -27,9 +27,6 @@ jobs:
         with:
           gradle-version: 7.0.2
       - run: gradle distZip
-      - name: Check if tmp folder is empty
-        run: ls -l build
-      - run: ls -l build/distributions
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
