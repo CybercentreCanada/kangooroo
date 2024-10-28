@@ -3,3 +3,6 @@
 .idea/
 gradle/wrapper/gradle-wrapper.properties
 .vscode/
+venv/
+bin/
+chromedriver

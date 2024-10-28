@@ -391,21 +391,6 @@ public class KangoorooStandaloneRunner {
         }
 
 
-        // System.out.println(configuration.getBrowserSettings().get("PHISHING"));
-
-        // var testHarFile = new File("test/data/session.har");
-        // var testKangoorooResult = new KangoorooResult(Pair.of(new HarReader().readFromFile(testHarFile), crawlUrl));
-        // KangoorooURLReport testReport = generateKangoorooReport(testKangoorooResult, Long.valueOf(0), crawlUrl, urlType,
-        //         browserSetting.getWindowSize(), browserSetting.getUserAgent(), sanitizeSession);
-
-        // log.info(GSON.toJson(testReport).toString());
-
-        // log.info("END THIS HERE!!");
-
-        // if (1 == 1) {
-        //     return;
-        // }
-
         try {
             runKangooroo(useSandbox, useCaptchaSolver, saveFiles, saveOriginalHar, sanitizeSession, urlOutputDir,
                     urlTempDir, configuration, crawlUrl, windowSize, userAgent, urlType);
@@ -414,7 +399,6 @@ public class KangoorooStandaloneRunner {
         } finally {
             // cleanup leftover files in the temporary directory
             FileUtils.deleteQuietly(urlTempDir);
-            log.info("Should delete temp folder");
         }
 
     }

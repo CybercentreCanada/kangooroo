@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-release-jar:
-    name: build and release Kangooroo ShadowJar
+    name: build and release Kangooroo Distribution
     runs-on: ubuntu-latest
 
     steps:
@@ -23,14 +23,12 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Build with Gradle
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 7.0.2
-      - run: gradle shadowJar
       - run: gradle distZip
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: | 
-            build/libs/KangoorooStandalone.jar
-            build/distribution/*
+            build/distributions/*.zip

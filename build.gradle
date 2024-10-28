@@ -92,10 +92,3 @@ application {
     mainClass = "ca.gc.cyber.kangooroo.KangoorooStandaloneRunner"
 }
 
-
-shadowJar {
-    zip64 = true
-    archiveBaseName.set('KangoorooStandalone')
-    archiveClassifier.set('')
-    archiveVersion.set('')
-}

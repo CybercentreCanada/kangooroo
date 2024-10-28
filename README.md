@@ -27,10 +27,22 @@ Running the program with logging configured:
 - `url` the url that you wish to crawl. It should be full url that starts with "http://" or "https://"
 - `url-type` Either `PHISHING` (default) or `SMISHING`. The `PHISHING` options sets the window size to `1280x720` and sets the user-agent to a desktop client. The `SMISHING` option sets the window size to be `375x667` and sets the user-agent to a phone client.
 
-User can specify which directory for output and which directory for storing temporary files by modifying the [conf.yml](https://github.com/CybercentreCanada/kangooroo/blob/stage/resources/conf.yml) file and specify the new conf file with: `-cf path/to/conf/file`
+Users can specify which directory for output and which directory for storing temporary files by modifying the [conf.yml](https://github.com/CybercentreCanada/kangooroo/blob/stage/resources/conf.yml) file and specify the new conf file with: `-cf path/to/conf/file`.
 
 The current default is `./tmp/` directory for temporary files and `./output/` for output result file. These two folder must exist on disk before running the program.
 
+Users can also control the verbosity of the output with the followign arguments:
+- `not-sanitize-session`, `nss` : To not remove file content from the the HAR output stored in results.json
+- `not-save-file`, `nsf`: To not save save favicon.ico, website source, and screenshot file
+- `not-save-har`, `nsh`: To not save the full har file
+
+Users can also turn off Chrome's default sandbox mode with argument `no-sandbox`. NOTE: This is a security risk and is not recommended.
+
+Users can specify some special modules with the `mods` option with a comma separated list. 
+Current modules:
+- `captcha`: Run the audio captcha solver when possible
+- `file_hash`: Include file hashes of each files fetched from the web crawl in results.json
+- `summary`: Include summary of crawl result in results.json 
 
 ## Output
 All files of interest would be in the **output_folder** specified in `conf.yml`. The result of the web crawl is stored in the directory `{output_folder}/{MD5 HASH of URL}/`.
