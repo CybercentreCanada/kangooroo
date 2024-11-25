@@ -109,9 +109,13 @@ public class KangoorooStandaloneRunner {
                     DigestUtils.md5Hex(url.toExternalForm()),
                     url.getHost(), result.getInitial().getServerIPAddress());
 
-            KangoorooURL actualUrl = new KangoorooURL(result.getUrl().toExternalForm(),
-                    DigestUtils.md5Hex(result.getUrl().toExternalForm()),
-                    result.getUrl().getHost(), lastHop.getServerIPAddress());
+            KangoorooURL actualUrl = null;
+            
+            if (result.getUrl() != null){
+                actualUrl = new KangoorooURL(result.getUrl().toExternalForm(),
+                        DigestUtils.md5Hex(result.getUrl().toExternalForm()),
+                        result.getUrl().getHost(), lastHop.getServerIPAddress());
+            }
 
             List<URLRedirection> urlRedirects = HarUtils.getHTTPRedirections(result.getHar());
 
@@ -137,6 +141,7 @@ public class KangoorooStandaloneRunner {
         long start = System.currentTimeMillis();
         KangoorooResult res = browser.get(crawlUrl, windowSize, userAgent);
         long processingTime = System.currentTimeMillis() - start;
+        
         browser.browserShutdown();
 
         createKangoorooOutput(urlOutputDir, configuration, crawlUrl, res, processingTime, saveOriginalHar, urlType,
@@ -399,6 +404,7 @@ public class KangoorooStandaloneRunner {
         } finally {
             // cleanup leftover files in the temporary directory
             FileUtils.deleteQuietly(urlTempDir);
+            log.debug("Temp directory should be deleted.");
         }
 
     }
