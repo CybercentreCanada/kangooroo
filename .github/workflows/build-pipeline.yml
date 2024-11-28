@@ -7,7 +7,7 @@ on:
 
 
 env:
-  DEV_VERSION: 2.0.1.dev1
+  DEV_VERSION: v2.0.1.dev0
 
 permissions:
   # need contents write permission to create release... careful with this because it is a broad permission
@@ -26,9 +26,9 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Change version of build.gradle to use current tag
-        run: sed -i -e "s/\${{ github.ref_name }}/$DEV_VERSION/g" build.gradle
+        run: sed -i -e "s/${DEV_VERSION}/${{ github.ref_name }}/g" build.gradle
       - name: Change version of conf.yml to use current tag
-        run: sed -i -e "s/\${{ github.ref_name }}/$DEV_VERSION/g" resources/conf.yml
+        run: sed -i -e "s/${DEV_VERSION}/${{ github.ref_name }}/g" resources/conf.yml 
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
