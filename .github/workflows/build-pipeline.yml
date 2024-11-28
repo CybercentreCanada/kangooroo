@@ -26,9 +26,9 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Change version of build.gradle to use current tag
-        run: sed -i -e "s/\${{ github.ref_name }}/$DEV_VERSION/g" build.gradle
+        run: sed -i -e "s/\${{ github.ref_name }}/${DEV_VERSION}/g" build.gradle && echo $DEV_VERSION
       - name: Change version of conf.yml to use current tag
-        run: sed -i -e "s/\${{ github.ref_name }}/$DEV_VERSION/g" resources/conf.yml
+        run: sed -i -e "s/\${{ github.ref_name }}/${DEV_VERSION}/g" resources/conf.yml && echo $DEV_VERSION
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
