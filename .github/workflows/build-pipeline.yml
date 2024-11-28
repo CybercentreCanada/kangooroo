@@ -6,6 +6,9 @@ on:
       - '*'
 
 
+env:
+  DEV_VERSION: 2.0.1.dev1
+
 permissions:
   # need contents write permission to create release... careful with this because it is a broad permission
   contents: write
@@ -22,13 +25,28 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
+      - name: Change version of build.gradle to use current tag
+        run: sed -i -e "s/\${{ github.ref_name }}/$DEV_VERSION/g" build.gradle
+      - name: Change version of conf.yml to use current tag
+        run: sed -i -e "s/\${{ github.ref_name }}/$DEV_VERSION/g" resources/conf.yml
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 7.0.2
+          gradle-version: 7.4.2
       - run: gradle distZip
-      - uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Distribute Zip as lastest stable release
+        uses: softprops/action-gh-release@v2
         with:
+          make_latest: true
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref, 'stable')}}
           files: | 
             build/distributions/*.zip
+            - run: gradle distZip
+      - name: Distribute Zip as dev release
+        uses: softprops/action-gh-release@v2
+        with:
+          make_latest: false
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref, 'dev')}}
+          files: | 
+            build/distributions/*.zip
+            
