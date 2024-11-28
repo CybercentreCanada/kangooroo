@@ -9,7 +9,7 @@ repositories {
 }
 
 group 'ca.gc.cyber'
-version '2.0.1'
+version '2.0.1.dev1'
 
 
 dependencies {
@@ -92,3 +92,8 @@ application {
     mainClass = "ca.gc.cyber.kangooroo.KangoorooStandaloneRunner"
 }
 
+distZip {
+    doFirst {
+        archiveName = "KangoorooStandalone.zip"
+    }
+}
