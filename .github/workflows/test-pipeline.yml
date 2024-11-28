@@ -20,7 +20,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 7.0.2
+          gradle-version: 7.4.2
       - run: gradle test
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
@@ -44,7 +44,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 7.0.2
+          gradle-version: 7.4.2
       - run: gradle distZip
       - uses: browser-actions/setup-chrome@v1
       - uses: nanasess/setup-chromedriver@v2
@@ -98,7 +98,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 7.0.2
+          gradle-version: 7.4.2
       - run: gradle distZip
 
       - uses: browser-actions/setup-chrome@v1
@@ -161,7 +161,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 7.0.2
+          gradle-version: 7.4.2
       - run: gradle distZip
 
       - uses: browser-actions/setup-chrome@v1
