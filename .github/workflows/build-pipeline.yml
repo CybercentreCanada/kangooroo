@@ -33,20 +33,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 7.4.2
-      - run: gradle distZip
+        run: gradle distZip
+
       - name: Distribute Zip as lastest stable release
         uses: softprops/action-gh-release@v2
-        with:
-          make_latest: true
         if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref, 'stable')}}
+          with:
+          make_latest: true
           files: | 
             build/distributions/*.zip
             - run: gradle distZip
       - name: Distribute Zip as dev release
         uses: softprops/action-gh-release@v2
+
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref, 'dev')}}
         with:
           make_latest: false
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref, 'dev')}}
           files: | 
             build/distributions/*.zip
             
