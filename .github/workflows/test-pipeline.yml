@@ -49,10 +49,10 @@ jobs:
       - uses: browser-actions/setup-chrome@v1
       - uses: nanasess/setup-chromedriver@v2
       - name: Get all files ready to run Kangooroo
-        run: cp /usr/local/bin/chromedriver . && mkdir output && mkdir tmp && cp build/distributions/kangooroo-*.zip . 
+        run: cp /usr/local/bin/chromedriver . && mkdir output && mkdir tmp && cp build/distributions/KangoorooStandalone.zip . 
       
       - name: Install Kangooroo Java
-        run: unzip -j kangooroo-*.zip kangooroo*/lib/* -d lib && unzip -j kangooroo-*.zip kangooroo*/bin/* -d bin
+        run: unzip -j KangoorooStandalone.zip KangoorooStandalone/lib/* -d lib && unzip -j KangoorooStandalone.zip KangoorooStandalone/bin/* -d bin
 
       - name: Run Kangooroo with default settings
         run: ./bin/kangooroo -mods summary --url https://duckduckgo.com/
@@ -106,10 +106,10 @@ jobs:
       - uses: nanasess/setup-chromedriver@v2
 
       - name: Get all files ready to run Kangooroo
-        run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/distributions/kangooroo-*.zip . 
+        run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/distributions/KangoorooStandalone.zip . 
       
       - name: Install Kangooroo Java
-        run: unzip -j kangooroo-*.zip kangooroo*/lib/* -d lib && unzip -j kangooroo-*.zip kangooroo*/bin/* -d bin
+        run: unzip -j KangoorooStandalone.zip KangoorooStandalone/lib/* -d lib && unzip -j KangoorooStandalone.zip KangoorooStandalone/bin/* -d bin
 
       - name: Run Kangooroo with Proxy
         run: ./bin/kangooroo -cf test/integration_test/test_conf.yml -mods summary --url https://duckduckgo.com/
@@ -169,10 +169,10 @@ jobs:
       - uses: nanasess/setup-chromedriver@v2
 
       - name: Get all files ready to run Kangooroo
-        run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/distributions/kangooroo-*.zip . 
+        run: cp /usr/local/bin/chromedriver . && mkdir output2 && mkdir tmp && cp build/distributions/KangoorooStandalone.zip . 
       
       - name: Install Kangooroo Java
-        run: unzip -j kangooroo-*.zip kangooroo*/lib/* -d lib && unzip -j kangooroo-*.zip kangooroo*/bin/* -d bin
+        run: unzip -j KangoorooStandalone.zip KangoorooStandalone/lib/* -d lib && unzip -j KangoorooStandalone.zip KangoorooStandalone/bin/* -d bin
 
       - name: Run Kangooroo with Proxy and Sandbox
         run: ./bin/kangooroo -mods summary --no-sandbox -cf test/integration_test/test_conf.yml --url https://duckduckgo.com/
