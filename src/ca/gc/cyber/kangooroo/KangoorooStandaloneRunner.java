@@ -62,7 +62,8 @@ public class KangoorooStandaloneRunner {
 
 
     public static KangoorooURLReport generateKangoorooReport(KangoorooResult result, Long processTime,
-            URL url, URLType urlType, String windowSize, String userAgent, boolean sanitizeSession, List<String> messageLog) throws IOException {
+            URL url, URLType urlType, String windowSize, String userAgent, boolean sanitizeSession, 
+            List<String> messageLog) throws IOException {
 
         KangoorooURLReport kangoorooReport = null;
 
@@ -121,6 +122,7 @@ public class KangoorooStandaloneRunner {
 
             kangoorooReport.setSummary(fetchResult, requestedUrl, actualUrl, urlRedirects, headers);
 
+
         }
 
         return kangoorooReport;
@@ -129,7 +131,8 @@ public class KangoorooStandaloneRunner {
 
     private static void runKangooroo(boolean useSandbox, boolean useCaptchaSolver, boolean saveFiles,
             boolean saveOriginalHar, boolean sanitizeSession, File urlOutputDir, File urlTempDir,
-            KangoorooRunnerConf configuration, URL crawlUrl, String windowSize, String userAgent, URLType urlType)
+            KangoorooRunnerConf configuration, URL crawlUrl, String windowSize, String userAgent, URLType urlType,
+            boolean simpleResult)
             throws IOException {
 
         KangoorooBrowser browser = new KangoorooChromeBrowser(
@@ -145,14 +148,14 @@ public class KangoorooStandaloneRunner {
         browser.browserShutdown();
 
         createKangoorooOutput(urlOutputDir, configuration, crawlUrl, res, processingTime, saveOriginalHar, urlType,
-                sanitizeSession, browser.getMessageLog().getMessagesAsList());
+                sanitizeSession, browser.getMessageLog().getMessagesAsList(), simpleResult);
 
 
     }
 
     private static void createKangoorooOutput(File urlOutputDir, KangoorooRunnerConf configuration, URL crawlUrl,
             KangoorooResult res, long processingTime, boolean saveOriginalHar, URLType urlType, boolean sanitizeSession,
-            List<String> messageLog)
+            List<String> messageLog, boolean simpleResult)
             throws IOException {
 
         var report = generateKangoorooReport(res, processingTime, crawlUrl, urlType,
@@ -166,6 +169,11 @@ public class KangoorooStandaloneRunner {
         } else {
             log.info("We are not saving the original HAR.");
         }
+
+        if (simpleResult) {
+            log.info("Remove HAR info from result.json.");
+            report.setReport(null);
+        } 
 
         File resultFile = new File(urlOutputDir, "results.json");
         FileUtils.writeStringToFile(resultFile, GSON.toJson(report), java.nio.charset.StandardCharsets.UTF_8);
@@ -216,6 +224,7 @@ public class KangoorooStandaloneRunner {
         Option notSaveHarOption = new Option("nsh", "not-save-har", false,
                 "Do NOT save original HAR as separate file.");
         Option modulesOption = new Option("mods", "modules", true, "Use modules");
+        Option simpleResultOption = new Option("sr", "simple-result", false, "Simplified result.json by removing har entries.");
 
         options.addOption(notSanitizeSessionOption);
         options.addOption(notSaveFilesOption);
@@ -228,6 +237,7 @@ public class KangoorooStandaloneRunner {
 
         options.addOption(confFileOption);
         options.addOption(noSandboxOption);
+        options.addOption(simpleResultOption);
 
         CommandLine params = null;
         try {
@@ -312,6 +322,7 @@ public class KangoorooStandaloneRunner {
         boolean sanitizeSession = !params.hasOption("not-sanitize-session");
         boolean saveOriginalHar = !params.hasOption("not-save-har");
         boolean saveFiles = !params.hasOption("not-save-file");
+        boolean simplifyResult = params.hasOption("simple-result");
 
         log.info("To sanitize session: " + sanitizeSession);
         log.info("To save original har file: " + saveOriginalHar);
@@ -398,7 +409,7 @@ public class KangoorooStandaloneRunner {
 
         try {
             runKangooroo(useSandbox, useCaptchaSolver, saveFiles, saveOriginalHar, sanitizeSession, urlOutputDir,
-                    urlTempDir, configuration, crawlUrl, windowSize, userAgent, urlType);
+                    urlTempDir, configuration, crawlUrl, windowSize, userAgent, urlType, simplifyResult);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
