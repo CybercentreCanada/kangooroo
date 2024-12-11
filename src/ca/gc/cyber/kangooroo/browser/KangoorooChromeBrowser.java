@@ -84,6 +84,13 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             CaptureType.RESPONSE_BINARY_CONTENT
     };
 
+    // OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints
+    private static final List<String> DISABLED_FEATURES = List.of("OptimizationGuideModelDownloading",
+            "OptimizationHintsFetching",
+            "OptimizationTargetPrediction", "OptimizationHints", "Translate", "MediaRouter", "DialMediaRouteProvider",
+            "CalculateNativeWinOcclusion",
+            "InterestFeedContentSuggestions", "CertificateTransparencyComponentUpdater", "AutofillServerCommunication");
+
     private boolean useSandbox = true;
 
     private boolean useCaptchaSolver = false;
@@ -165,7 +172,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             // First check
             if (isUnresponsive(driver, 5)) {
                 log.warn("Chromium is unresponsive");
-                messageLog.warn( "Chromium is unresponsive");
+                messageLog.warn("Chromium is unresponsive");
                 return Pair.of(har, null);
             }
 
@@ -326,7 +333,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             log.error("Unable to download the favicon due to " + rootCause.getClass()
                     .getSimpleName() + ": " + rootCause.getMessage());
             messageLog.error("Unable to download the favicon due to " + rootCause.getClass()
-                    .getSimpleName() + ": " + rootCause.getMessage());           
+                    .getSimpleName() + ": " + rootCause.getMessage());
         }
     }
 
@@ -411,13 +418,13 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                     log.debug("Successful capture of screenshot of " + windowHandle);
                 } else {
                     log.error("Failed to capture screenshot of " + windowHandle);
-                    messageLog.error( "Failed to capture screenshot of " + windowHandle);
+                    messageLog.error("Failed to capture screenshot of " + windowHandle);
                 }
             }
         } catch (Throwable t) {
             Throwable cause = ExceptionUtils.getRootCause(t);
             Throwable rootCause = cause != null ? cause : t;
-            
+
             log.error("Unable to take screenshots due to " + rootCause.getClass()
                     .getSimpleName() + ": " + rootCause.getMessage(), true);
             messageLog.error("Unable to take screenshots due to " + rootCause.getClass()
@@ -515,7 +522,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         // https://chromium.googlesource.com/chromium/src/+/master/headless/app/headless_shell_switches.cc
         options.addArguments("--disable-extensions");
         options.addArguments("--silent");
-        options.addArguments("--headless");
+        options.addArguments("--headless=new");
         options.addArguments("--disable-application-cache"); // see issue #5
         options.addArguments("--ignore-certificate-errors");
         options.addArguments("--disable-web-security");
@@ -524,6 +531,9 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.addArguments("--hide-scrollbars");
         options.addArguments("--lang=en-US,en;q=0.9");
         // options.addArguments("--block-new-web-contents"); // see issue #5
+
+        // // Disable POST request to google optimization
+        options.addArguments("--disable-features=" + DISABLED_FEATURES.stream().collect(Collectors.joining(",")));
 
         options.addArguments("--window-size=" + windowSize);
         options.addArguments("--user-agent=" + userAgent);
@@ -562,7 +572,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                     throw e;
                 } else {
                     log.warn("Unable to start Chrome, trying again..", e);
-                    messageLog.warn( "Unable to start Chrome, trying again.." + e.getMessage());
+                    messageLog.warn("Unable to start Chrome, trying again.." + e.getMessage());
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e1) {
