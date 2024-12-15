@@ -7,7 +7,6 @@ import ca.gc.cyber.kangooroo.report.KangoorooURL;
 import ca.gc.cyber.kangooroo.report.KangoorooURLReport;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLRedirection;
-import ca.gc.cyber.kangooroo.utils.log.MessageLog;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
@@ -29,12 +29,10 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import com.browserup.harreader.HarReader;
 import com.browserup.harreader.model.HarEntry;
 import com.browserup.harreader.model.HarHeader;
 import com.google.gson.Gson;
@@ -60,10 +58,21 @@ public class KangoorooStandaloneRunner {
         return log;
     }
 
-
     public static KangoorooURLReport generateKangoorooReport(KangoorooResult result, Long processTime,
-            URL url, URLType urlType, String windowSize, String userAgent, boolean sanitizeSession, 
+            URL url, URLType urlType, String windowSize, String userAgent, boolean sanitizeSession,
             List<String> messageLog) throws IOException {
+
+        // There is a bug with browserup proxy where if you upstream proxy there will
+        // always be a connection error message with status code 0.
+        // For now I am doing an ugly fix where I remove the response entry with 0
+        // status code.
+        
+        HarUtils.removeResponseEntries(result.getHar(), 0);
+
+        // Chromebrowser makes noisy requests that is unrelated to the URL for get.
+        // We will filter out these requests from the HAR file
+        HarUtils.removeRequestUrlEntries(result.getHar(), "https://accounts.google.com/ListAccounts");        
+
 
         KangoorooURLReport kangoorooReport = null;
 
@@ -83,7 +92,6 @@ public class KangoorooStandaloneRunner {
         }
 
         Map<String, String> engineInfo = Map.of("engineName", ENGINE_NAME, "engineVersion", engineVersion);
-    
 
         kangoorooReport.setExperiment(engineInfo,
                 (result.isConnectionSuccess() && result.isFetchSuccess()) ? "SUCCESS" : "FAIL", messageLog,
@@ -111,8 +119,8 @@ public class KangoorooStandaloneRunner {
                     url.getHost(), result.getInitial().getServerIPAddress());
 
             KangoorooURL actualUrl = null;
-            
-            if (result.getUrl() != null){
+
+            if (result.getUrl() != null) {
                 actualUrl = new KangoorooURL(result.getUrl().toExternalForm(),
                         DigestUtils.md5Hex(result.getUrl().toExternalForm()),
                         result.getUrl().getHost(), lastHop.getServerIPAddress());
@@ -121,7 +129,6 @@ public class KangoorooStandaloneRunner {
             List<URLRedirection> urlRedirects = HarUtils.getHTTPRedirections(result.getHar());
 
             kangoorooReport.setSummary(fetchResult, requestedUrl, actualUrl, urlRedirects, headers);
-
 
         }
 
@@ -144,12 +151,11 @@ public class KangoorooStandaloneRunner {
         long start = System.currentTimeMillis();
         KangoorooResult res = browser.get(crawlUrl, windowSize, userAgent);
         long processingTime = System.currentTimeMillis() - start;
-        
+
         browser.browserShutdown();
 
         createKangoorooOutput(urlOutputDir, configuration, crawlUrl, res, processingTime, saveOriginalHar, urlType,
                 sanitizeSession, browser.getMessageLog().getMessagesAsList(), simpleResult);
-
 
     }
 
@@ -173,7 +179,7 @@ public class KangoorooStandaloneRunner {
         if (simpleResult) {
             log.info("Remove HAR info from result.json.");
             report.setReport(null);
-        } 
+        }
 
         File resultFile = new File(urlOutputDir, "results.json");
         FileUtils.writeStringToFile(resultFile, GSON.toJson(report), java.nio.charset.StandardCharsets.UTF_8);
@@ -224,7 +230,8 @@ public class KangoorooStandaloneRunner {
         Option notSaveHarOption = new Option("nsh", "not-save-har", false,
                 "Do NOT save original HAR as separate file.");
         Option modulesOption = new Option("mods", "modules", true, "Use modules");
-        Option simpleResultOption = new Option("sr", "simple-result", false, "Simplified result.json by removing har entries.");
+        Option simpleResultOption = new Option("sr", "simple-result", false,
+                "Simplified result.json by removing har entries.");
 
         options.addOption(notSanitizeSessionOption);
         options.addOption(notSaveFilesOption);
@@ -328,7 +335,6 @@ public class KangoorooStandaloneRunner {
         log.info("To save original har file: " + saveOriginalHar);
         log.info("To save all files: " + saveFiles);
 
-
         boolean useSandbox = !params.hasOption("no-sandbox");
         boolean useCaptchaSolver = enabledModules.contains("captcha");
 
@@ -405,7 +411,6 @@ public class KangoorooStandaloneRunner {
                 getLogger().debug("Using unauthenticated proxy. No username or password specified.");
             }
         }
-
 
         try {
             runKangooroo(useSandbox, useCaptchaSolver, saveFiles, saveOriginalHar, sanitizeSession, urlOutputDir,
