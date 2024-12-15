@@ -61,9 +61,15 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import com.browserup.bup.util.HttpMessageContents;
+import com.browserup.bup.util.HttpMessageInfo;
 import com.browserup.bup.BrowserUpProxy;
 import com.browserup.bup.BrowserUpProxyServer;
 import com.browserup.bup.client.ClientUtil;
+import com.browserup.bup.filters.RequestFilter;
 import com.browserup.bup.proxy.CaptureType;
 import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
@@ -247,6 +253,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      */
     private Har get(WebDriver driver, String url, File downloadFolder) {
         BrowserUpProxy proxy = getPROXY();
+        
         proxy.newHar();
         try {
             driver.manage().timeouts().pageLoadTimeout(DEFAULT_PAGE_LOAD_TIMEOUT, TimeUnit.SECONDS);
@@ -672,6 +679,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
             // STEP 2. Make sure Chromium is using MergedFont to display any fonts
             BrowserUpProxyServer proxy = new BrowserUpProxyServer();
+            
             proxy.start();
             RemoteWebDriver driver = createDriver("", "", new File("tmp"));
             driver.get("file:///" + Paths.get("etc", "unicode-test.html").toAbsolutePath());
