@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
 import com.browserup.harreader.model.HarHeader;
-import com.browserup.harreader.model.HarLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -51,6 +50,9 @@ public class HarUtils {
 
     public static List<URLRedirection> getHTTPRedirections(Har har) throws MalformedURLException {
         List<URLRedirection> redirections = new ArrayList<>();
+        if (har.getLog().getEntries().isEmpty()) {
+            return new ArrayList<URLRedirection>();
+        }
         URL from = new URL(har.getLog().getEntries().get(0).getRequest().getUrl());
 
         // Compute redirection as seen on the HAR file based on the "redirectURL" value

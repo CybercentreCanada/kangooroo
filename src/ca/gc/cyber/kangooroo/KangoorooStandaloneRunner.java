@@ -94,7 +94,7 @@ public class KangoorooStandaloneRunner {
 
         kangoorooReport.setExperiment(engineInfo,
                 (result.isConnectionSuccess() && result.isFetchSuccess()) ? "SUCCESS" : "FAIL", messageLog,
-                result.getStartTime().toString(), processTime, url.toExternalForm(), urlType.name(), windowSize,
+                (result.getStartTime() != null ) ? result.getStartTime().toString(): null, processTime, url.toExternalForm(), urlType.name(), windowSize,
                 userAgent, enabledModules.stream().collect(Collectors.toList()));
 
         if (enabledModules.contains("captcha")) {
@@ -115,7 +115,8 @@ public class KangoorooStandaloneRunner {
 
             KangoorooURL requestedUrl = new KangoorooURL(url.toExternalForm(),
                     DigestUtils.md5Hex(url.toExternalForm()),
-                    url.getHost(), result.getInitial().getServerIPAddress());
+                    url.getHost(), 
+                    (result.getInitial() != null) ? result.getInitial().getServerIPAddress(): null);
 
             KangoorooURL actualUrl = null;
 
