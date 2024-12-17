@@ -106,8 +106,8 @@ public class KangoorooStandaloneRunner {
         }
 
         if (enabledModules.contains("summary")) {
-            Map<String, String> fetchResult = Map.of("response_code",
-                    String.valueOf(lastHop != null ? lastHop.getResponse().getStatus() : 0),
+            Map<String, Object> fetchResult = Map.of("response_code",
+                    lastHop != null ? lastHop.getResponse().getStatus() : 0,
                     "connection_success", String.valueOf(result.isConnectionSuccess()),
                     "fetch_object_success", String.valueOf(result.isFetchSuccess()),
                     // TODO: Add logic for figuring out time out
