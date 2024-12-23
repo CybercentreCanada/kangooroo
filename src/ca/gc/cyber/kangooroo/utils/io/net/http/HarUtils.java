@@ -14,6 +14,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -404,18 +407,10 @@ public class HarUtils {
 
         List<HarEntry> oldEntries = har.getLog().getEntries();
 
-        List<Integer> entryToRemove = new ArrayList<Integer>();
-        for (int i = 0; i < oldEntries.size(); i++) {
-            var curUrl = oldEntries.get(i).getRequest().getUrl();
-            if (curUrl.contains(pattern)) {
-                entryToRemove.add(i);
-            }
-        }
-
-        for (Integer entryIdx : entryToRemove) {
-            oldEntries.remove((int) entryIdx);
-
-        }
+        har.getLog().setEntries(
+            oldEntries.stream().filter(entry -> !entry.getRequest().getUrl().contains(pattern))
+            .collect(Collectors.toList())
+        );
 
 
     }
@@ -423,19 +418,11 @@ public class HarUtils {
     public static void removeResponseEntries(Har har, int code) {
 
         List<HarEntry> oldEntries = har.getLog().getEntries();
-        List<Integer> entryToRemove = new ArrayList<Integer>();
-        for (int i = 0; i < oldEntries.size(); i++) {
-            var statusCode = oldEntries.get(i).getResponse().getStatus();
 
-            if (statusCode == code) {
-                entryToRemove.add(i);
-            }
-
-        }
-
-        for (Integer entryIdx : entryToRemove) {
-            oldEntries.remove((int) entryIdx);
-        }
+        har.getLog().setEntries(oldEntries.stream()
+        .filter(entry -> entry.getResponse().getStatus() != code)
+        .collect(Collectors.toList()));
+        
 
     }
 
