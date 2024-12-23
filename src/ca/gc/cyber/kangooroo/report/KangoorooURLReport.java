@@ -72,7 +72,7 @@ public class KangoorooURLReport {
     }
 
 
-    public void setSummary(Map<String, String> fetchResult, KangoorooURL requestedUrl, KangoorooURL actualUrl, List<URLRedirection> urlRedirects, Map<String, String> serverInfo) {
+    public void setSummary(Map<String, Object> fetchResult, KangoorooURL requestedUrl, KangoorooURL actualUrl, List<URLRedirection> urlRedirects, Map<String, String> serverInfo) {
         this.summary = new Summary(fetchResult, requestedUrl, actualUrl, urlRedirects, serverInfo);
     }
 
@@ -122,7 +122,7 @@ public class KangoorooURLReport {
     @AllArgsConstructor
     class Summary {
 
-        Map<String, String> fetchResult;
+        Map<String, Object> fetchResult;
         KangoorooURL requestedUrl;
         KangoorooURL actualUrl;
         List<URLRedirection> urlRedirects;
