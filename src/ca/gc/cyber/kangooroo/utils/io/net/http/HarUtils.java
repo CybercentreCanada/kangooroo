@@ -150,6 +150,10 @@ public class HarUtils {
     public static Date getStartTime(Har har) {
         if (har.getLog().getEntries().size() > 0) {
             return har.getLog().getEntries().get(0).getStartedDateTime();
+        } else {
+            if (har.getLog().getPages().size() > 0) {
+                return har.getLog().getPages().get(0).getStartedDateTime();
+            }
         }
         return null;
 
