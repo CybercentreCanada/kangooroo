@@ -123,7 +123,7 @@ public class KangoorooStandaloneRunner {
             if (result.getUrl() != null) {
                 actualUrl = new KangoorooURL(result.getUrl().toExternalForm(),
                         DigestUtils.md5Hex(result.getUrl().toExternalForm()),
-                        result.getUrl().getHost(), lastHop.getServerIPAddress());
+                        result.getUrl().getHost(), lastHop!= null ? lastHop.getServerIPAddress() : null);
             }
 
             List<URLRedirection> urlRedirects = HarUtils.getHTTPRedirections(result.getHar());

@@ -95,7 +95,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             "OptimizationHintsFetching",
             "OptimizationTargetPrediction", "OptimizationHints", "Translate", "MediaRouter", "DialMediaRouteProvider",
             "CalculateNativeWinOcclusion",
-            "InterestFeedContentSuggestions", "CertificateTransparencyComponentUpdater", "AutofillServerCommunication");
+            "InterestFeedContentSuggestions", "CertificateTransparencyComponentUpdater", "AutofillServerCommunication", "AvoidUnnecessaryBeforeUnloadCheckSync", "HeavyAdPrivacyMitigations");
 
     private boolean useSandbox = true;
 
@@ -537,8 +537,17 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--hide-scrollbars");
         options.addArguments("--lang=en-US,en;q=0.9");
+        options.addArguments("--disable-component-update");
         // options.addArguments("--block-new-web-contents"); // see issue #5
-
+        options.addArguments("--disable-component-extensions-with-background-pages");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--no-default-browser-check");
+        options.addArguments("--disable-background-networking");
+        options.addArguments("--disable-sync");
+        options.addArguments("--no-first-run");
+        options.addArguments("--ash-no-nudges");
+        options.addArguments("--disable-search-engine-choice-screen");
+        options.addArguments("--enable-automation");
         // // Disable POST request to google optimization
         options.addArguments("--disable-features=" + DISABLED_FEATURES.stream().collect(Collectors.joining(",")));
 
