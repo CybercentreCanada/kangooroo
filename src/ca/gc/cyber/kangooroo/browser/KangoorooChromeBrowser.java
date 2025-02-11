@@ -95,7 +95,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             "OptimizationHintsFetching",
             "OptimizationTargetPrediction", "OptimizationHints", "Translate", "MediaRouter", "DialMediaRouteProvider",
             "CalculateNativeWinOcclusion",
-            "InterestFeedContentSuggestions", "CertificateTransparencyComponentUpdater", "AutofillServerCommunication", "AvoidUnnecessaryBeforeUnloadCheckSync", "HeavyAdPrivacyMitigations");
+            "InterestFeedContentSuggestions", "CertificateTransparencyComponentUpdater", "AutofillServerCommunication", 
+            "AvoidUnnecessaryBeforeUnloadCheckSync", "HeavyAdPrivacyMitigations", "ChromeWhatsNewUI");
 
     private boolean useSandbox = true;
 
@@ -538,7 +539,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.addArguments("--hide-scrollbars");
         options.addArguments("--lang=en-US,en;q=0.9");
         options.addArguments("--disable-component-update");
-        // options.addArguments("--block-new-web-contents"); // see issue #5
+        options.addArguments("--block-new-web-contents"); // see issue #5
         options.addArguments("--disable-component-extensions-with-background-pages");
         options.addArguments("--disable-default-apps");
         options.addArguments("--no-default-browser-check");
@@ -547,7 +548,12 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.addArguments("--no-first-run");
         options.addArguments("--ash-no-nudges");
         options.addArguments("--disable-search-engine-choice-screen");
-        options.addArguments("--enable-automation");
+        // options.addArguments("--enable-automation");
+        options.addArguments("--disable-infobars");
+        options.addArguments("--disable-first-run-ui");
+        options.addArguments("--incognito");
+        options.setExperimentalOption("useAutomationExtension", false);
+
         // // Disable POST request to google optimization
         options.addArguments("--disable-features=" + DISABLED_FEATURES.stream().collect(Collectors.joining(",")));
 
