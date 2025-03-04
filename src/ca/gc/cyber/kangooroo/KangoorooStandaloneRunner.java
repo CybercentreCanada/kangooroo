@@ -72,6 +72,7 @@ public class KangoorooStandaloneRunner {
         // Chromebrowser makes noisy requests that is unrelated to the URL for get.
         // We will filter out these requests from the HAR file
         HarUtils.removeRequestUrlEntries(result.getHar(), "https://accounts.google.com/ListAccounts");
+        HarUtils.removeRequestUrlEntries(result.getHar(), "http://clients2.google.com/");
 
         KangoorooURLReport kangoorooReport = null;
 
