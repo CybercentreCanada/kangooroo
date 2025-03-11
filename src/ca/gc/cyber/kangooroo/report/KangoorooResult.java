@@ -1,5 +1,6 @@
 package ca.gc.cyber.kangooroo.report;
 
+import ca.gc.cyber.kangooroo.report.KangoorooURLReport.DownloadStatus;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 
 import java.net.URL;
@@ -11,6 +12,7 @@ import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public final class KangoorooResult {
@@ -18,6 +20,9 @@ public final class KangoorooResult {
     private final Pair<Har, URL> urlHar;
 
     private CaptchaResult captchaResult = CaptchaResult.NONE;
+    
+    @Setter
+    private DownloadStatus downloadStatus = DownloadStatus.NO_DOWNLOAD;
 
     public enum CaptchaResult {
         CAPTCHA_SOLVED, CAPTCHA_BLOCKED, CAPTCHA_FAILED, NO_CAPTCHA, IS_HCAPTCHA, NONE

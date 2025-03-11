@@ -3,6 +3,7 @@ package ca.gc.cyber.kangooroo.browser;
 import ca.gc.cyber.kangooroo.browser.chrome.ChromeExtender;
 import ca.gc.cyber.kangooroo.browser.chrome.CustomChromeDriver;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
+import ca.gc.cyber.kangooroo.report.KangoorooURLReport.DownloadStatus;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 
 import java.awt.GraphicsEnvironment;
@@ -10,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -18,7 +20,10 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -103,10 +108,14 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
     private boolean saveOutputFiles = true;
 
+    private File downloadFolder;
+
     public KangoorooChromeBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
             Optional<String> username, Optional<String> password, boolean useSandbox) {
         super(resultFolder, tempFolder, upstreamProxy, username, password);
         this.useSandbox = useSandbox;
+        this.downloadFolder = new File(tempFolder, "download");
+        this.downloadFolder.mkdir();
     }
 
     public KangoorooChromeBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
@@ -133,6 +142,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
         KangoorooResult.CaptchaResult captResult = KangoorooResult.CaptchaResult.NONE;
         Pair<Har, URL> pair = null;
+        DownloadStatus downloadStatus = DownloadStatus.NO_DOWNLOAD;
         try {
             driver.getWindowHandle();
 
@@ -140,14 +150,16 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             log.debug("Main tab: " + driver.getWindowHandle());
 
             // open the webpage
-            Har har = get(driver, initialURL.toExternalForm(), tempFolder);
+            Har har = get(driver, initialURL.toExternalForm());
 
             if (useCaptchaSolver) {
                 captResult = captchaSolver.removeCaptcha(tempFolder);
             }
 
+            downloadStatus = checkDownloadStatus();
+
             // process result, get favicon, screenshots etc
-            pair = processResult(har, userAgent, driver, tempFolder, resultFolder);
+            pair = processResult(har, userAgent, driver, tempFolder, resultFolder, downloadStatus);
 
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -155,9 +167,33 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             driver.quit();
         }
 
-        return new KangoorooResult(pair, captResult);
+        var result = new KangoorooResult(pair, captResult);
+        result.setDownloadStatus(downloadStatus);
+        return result;
 
     }
+
+    private DownloadStatus checkDownloadStatus() {
+
+        try (var files = Files.list(downloadFolder.toPath())) {
+            
+            List<Path> downloadFiles = files.collect(Collectors.toList());
+
+            if ( downloadFiles.stream().anyMatch(x -> {return x.toString().endsWith(".crdownload");})) {
+                return DownloadStatus.INCOMPLETE_DOWNLOAD;
+            }
+
+            if( downloadFiles.stream().count() > 0) {
+                return DownloadStatus.COMPLETED_DOWNLOAD;
+            }
+
+        } catch (IOException e) { 
+                    log.error(e.getMessage());
+                }
+
+        return DownloadStatus.NO_DOWNLOAD;
+    }
+
 
     /**
      * After making connection to the webpage, get source html, screenshot, and
@@ -171,7 +207,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      * @return
      */
     protected Pair<Har, URL> processResult(Har har, String userAgent, RemoteWebDriver driver, File tmpDownloadFolder,
-            File resultFolder) {
+            File resultFolder, DownloadStatus downloadStatus) {
         log.info("Fetch done, processing the results..");
         if (HarUtils.isConnectionSuccess(har)) {
 
@@ -231,6 +267,15 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
                 savePageSource(driver, resultFolder);
                 getFavicon(driver, userAgent, resultFolder);
                 takeScreenshots(driver, resultFolder);
+
+                if (DownloadStatus.COMPLETED_DOWNLOAD.equals(downloadStatus)) {
+                    try {
+                        Files.move(downloadFolder.toPath(), new File(resultFolder, "download").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+
             } else {
                 log.info("We are not saving any files.");
             }
@@ -251,14 +296,15 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      * This method also returns the HAR object that records all network interaction
      * with the website
      */
-    private Har get(WebDriver driver, String url, File downloadFolder) {
+    private Har get(WebDriver driver, String url) {
         BrowserUpProxy proxy = getPROXY();
-        
+
         proxy.newHar();
         try {
             driver.manage().timeouts().pageLoadTimeout(DEFAULT_PAGE_LOAD_TIMEOUT, TimeUnit.SECONDS);
-            prepareDownloadFolder(driver, downloadFolder);
+            prepareDownloadFolder(driver);
             driver.get(url);
+
             proxy.waitForQuiescence(1, 10, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             log.warn("Timeout of " + DEFAULT_PAGE_LOAD_TIMEOUT + " sec. reached.");
@@ -482,12 +528,15 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      * @param driver
      * @param downloadFolder
      */
-    private void prepareDownloadFolder(WebDriver driver, File downloadFolder) {
+    private void prepareDownloadFolder(WebDriver driver) {
 
         ChromeDriverService driverService = ((CustomChromeDriver) driver).getService();
 
+
         // Prepare the command
         Map<String, Object> commandParams = new HashMap<>();
+
+        // makes chrome download to a specified folder
         commandParams.put("cmd", "Page.setDownloadBehavior");
         Map<String, String> params = new HashMap<>();
         params.put("behavior", "allow");
@@ -548,9 +597,13 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.addArguments("--ash-no-nudges");
         options.addArguments("--disable-search-engine-choice-screen");
         options.addArguments("--enable-automation");
+
+        // remove a few mroe annoying network call
+        options.addArguments("--incognito");
+
         // // Disable POST request to google optimization
         options.addArguments("--disable-features=" + DISABLED_FEATURES.stream().collect(Collectors.joining(",")));
-
+        
         options.addArguments("--window-size=" + windowSize);
         options.addArguments("--user-agent=" + userAgent);
 
@@ -566,6 +619,17 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.setCapability(CapabilityType.SUPPORTS_APPLICATION_CACHE, false); // see issue #5
         options.setCapability(CapabilityType.LOGGING_PREFS, logPrefs);
         options.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR, UnexpectedAlertBehaviour.ACCEPT);
+
+
+        // Somehow somewhere in this list of commands is helping me download files in the right place without heap error....
+        HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
+        chromePrefs.put("safebrowsing_for_trusted_sources_enabled", false);
+        chromePrefs.put("download.prompt_for_download", false);
+        chromePrefs.put("safebrowsing.enabled", false);
+        chromePrefs.put("profile.default_content_settings.popups", 0);
+
+        options.setExperimentalOption("prefs", chromePrefs);
+        
 
         ChromeDriverService service = new ChromeDriverService.Builder()
                 .usingDriverExecutable(CHROME_DRIVER_EXECUTABLE)
@@ -583,6 +647,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         while (driver == null) {
             try {
                 driver = new CustomChromeDriver(service, options);
+                
             } catch (WebDriverException e) {
                 if (retry >= 2) {
                     throw e;

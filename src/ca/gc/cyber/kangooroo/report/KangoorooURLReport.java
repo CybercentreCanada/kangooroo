@@ -33,6 +33,10 @@ public class KangoorooURLReport {
         RECAPTCHA, H_CAPTCHA
     }
 
+    public enum DownloadStatus {
+        COMPLETED_DOWNLOAD, INCOMPLETE_DOWNLOAD, NO_DOWNLOAD
+    }
+
 
     
 
@@ -43,9 +47,10 @@ public class KangoorooURLReport {
 
     public void setExperiment(Map<String, String> engineInfo, 
     String status, List<String> messages, String startTime, 
-    Long processTime,String url, String urlType, String windowSize, String userAgent, List<String> modules) {
+    Long processTime,String url, String urlType, String windowSize, String userAgent, List<String> modules,
+    DownloadStatus downloadStatus) {
         this.experiment = new Experimentation(engineInfo);
-        this.experiment.setExecution(status, messages, startTime, processTime);
+        this.experiment.setExecution(status, messages, startTime, processTime, downloadStatus);
         this.experiment.setParams(url, urlType, windowSize, userAgent, modules);
     }
 
@@ -88,8 +93,8 @@ public class KangoorooURLReport {
 
         }
 
-        public void setExecution(String status, List<String> messages, String startTime, Long processTime) {
-            this.execution = new Execution(status, messages, startTime, processTime);
+        public void setExecution(String status, List<String> messages, String startTime, Long processTime, DownloadStatus downloadStatus) {
+            this.execution = new Execution(status, messages, startTime, processTime, downloadStatus);
         }
 
         public void setParams(String url, String urlType, String windowSize, String userAgent, List<String> modules) {
@@ -115,6 +120,8 @@ public class KangoorooURLReport {
             List<String> messages;
             String startTime;
             Long processTime;
+            DownloadStatus downloadStatus;
+            
         }
     }
 

@@ -5,6 +5,7 @@ import ca.gc.cyber.kangooroo.browser.KangoorooChromeBrowser;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 import ca.gc.cyber.kangooroo.report.KangoorooURL;
 import ca.gc.cyber.kangooroo.report.KangoorooURLReport;
+import ca.gc.cyber.kangooroo.report.KangoorooURLReport.DownloadStatus;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLRedirection;
 
@@ -96,7 +97,7 @@ public class KangoorooStandaloneRunner {
         kangoorooReport.setExperiment(engineInfo,
                 (result.isConnectionSuccess() && result.isFetchSuccess()) ? "SUCCESS" : "FAIL", messageLog,
                 (result.getStartTime() != null ) ? result.getStartTime().toString(): null, processTime, url.toExternalForm(), urlType.name(), windowSize,
-                userAgent, enabledModules.stream().collect(Collectors.toList()));
+                userAgent, enabledModules.stream().collect(Collectors.toList()), result.getDownloadStatus());
 
         if (enabledModules.contains("captcha")) {
             kangoorooReport.setCaptcha(result.getCaptchaResult());
@@ -184,6 +185,7 @@ public class KangoorooStandaloneRunner {
 
         File resultFile = new File(urlOutputDir, "results.json");
         FileUtils.writeStringToFile(resultFile, GSON.toJson(report), java.nio.charset.StandardCharsets.UTF_8);
+
 
     }
 
