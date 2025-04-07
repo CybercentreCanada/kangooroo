@@ -77,8 +77,9 @@ public class KangoorooURLReport {
     }
 
 
-    public void setSummary(Map<String, Object> fetchResult, KangoorooURL requestedUrl, KangoorooURL actualUrl, List<URLRedirection> urlRedirects, Map<String, String> serverInfo) {
-        this.summary = new Summary(fetchResult, requestedUrl, actualUrl, urlRedirects, serverInfo);
+    public void setSummary(Map<String, Object> fetchResult, KangoorooURL requestedUrl, KangoorooURL actualUrl, 
+    List<URLRedirection> urlRedirects, Map<String, String> serverInfo, Map<String, String> requestHeaders, Map<String, String> sessionCookies) {
+        this.summary = new Summary(fetchResult, requestedUrl, actualUrl, urlRedirects, serverInfo, requestHeaders, sessionCookies);
     }
 
     @Data 
@@ -134,6 +135,8 @@ public class KangoorooURLReport {
         KangoorooURL actualUrl;
         List<URLRedirection> urlRedirects;
         Map<String, String> serverInfo;
+        Map<String, String> requestHeaders;
+        Map<String, String> sessionCookies;
 
         
     }

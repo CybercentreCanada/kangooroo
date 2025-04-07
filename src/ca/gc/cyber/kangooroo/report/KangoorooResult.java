@@ -5,8 +5,12 @@ import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 
 import java.net.URL;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.openqa.selenium.WebDriver;
 
 import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
@@ -24,6 +28,9 @@ public final class KangoorooResult {
     @Setter
     private DownloadStatus downloadStatus = DownloadStatus.NO_DOWNLOAD;
 
+    @Setter
+    private Map<String, String> cookies = new HashMap<>();
+
     public enum CaptchaResult {
         CAPTCHA_SOLVED, CAPTCHA_BLOCKED, CAPTCHA_FAILED, NO_CAPTCHA, IS_HCAPTCHA, NONE
     }
@@ -40,6 +47,7 @@ public final class KangoorooResult {
         this(har);
         this.captchaResult = captchaResult;
     }
+
 
     public KangoorooResult(Har har, URL url, CaptchaResult captchaResult) {
         this(har, url);

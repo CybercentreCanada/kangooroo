@@ -85,12 +85,22 @@ public class KangoorooStandaloneRunner {
 
         HarEntry lastHop = result.getFirstNotRedirected();
         URL lastHopUrl = lastHop != null ? new URL(lastHop.getRequest().getUrl()) : null;
-        LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+        LinkedHashMap<String, String> responseHeaders = new LinkedHashMap<>();
+        LinkedHashMap<String, String> requestHeaders = new LinkedHashMap<>();
         if (lastHop != null && lastHop.getResponse() != null) {
             for (HarHeader header : lastHop.getResponse().getHeaders()) {
-                headers.put(header.getName(), header.getValue());
+                responseHeaders.put(header.getName(), header.getValue());
             }
         }
+
+        if (lastHop != null && lastHop.getRequest() != null) {
+            for (HarHeader header : lastHop.getRequest().getHeaders()) {
+                requestHeaders.put(header.getName(), header.getValue());
+            }
+        }      
+
+
+
 
         Map<String, String> engineInfo = Map.of("engineName", ENGINE_NAME, "engineVersion", engineVersion);
 
@@ -130,7 +140,7 @@ public class KangoorooStandaloneRunner {
 
             List<URLRedirection> urlRedirects = HarUtils.getHTTPRedirections(result.getHar());
 
-            kangoorooReport.setSummary(fetchResult, requestedUrl, actualUrl, urlRedirects, headers);
+            kangoorooReport.setSummary(fetchResult, requestedUrl, actualUrl, urlRedirects, responseHeaders, requestHeaders, result.getCookies());
 
         }
 

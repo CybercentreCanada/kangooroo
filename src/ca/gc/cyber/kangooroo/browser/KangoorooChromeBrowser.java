@@ -66,15 +66,9 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import com.browserup.bup.util.HttpMessageContents;
-import com.browserup.bup.util.HttpMessageInfo;
 import com.browserup.bup.BrowserUpProxy;
 import com.browserup.bup.BrowserUpProxyServer;
 import com.browserup.bup.client.ClientUtil;
-import com.browserup.bup.filters.RequestFilter;
 import com.browserup.bup.proxy.CaptureType;
 import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
@@ -143,6 +137,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         KangoorooResult.CaptchaResult captResult = KangoorooResult.CaptchaResult.NONE;
         Pair<Har, URL> pair = null;
         DownloadStatus downloadStatus = DownloadStatus.NO_DOWNLOAD;
+        Map<String, String> cookies = new HashMap<>();
         try {
             driver.getWindowHandle();
 
@@ -160,6 +155,9 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
             // process result, get favicon, screenshots etc
             pair = processResult(har, userAgent, driver, tempFolder, resultFolder, downloadStatus);
+            driver.manage().getCookies().stream().forEach((var cookie) -> {
+                cookies.put(cookie.getName(), cookie.getValue());
+            });
 
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -169,6 +167,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
         var result = new KangoorooResult(pair, captResult);
         result.setDownloadStatus(downloadStatus);
+        result.setCookies(cookies);
         return result;
 
     }
@@ -315,6 +314,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         }
 
         driver.manage().timeouts().pageLoadTimeout(5, TimeUnit.SECONDS);
+
 
         return proxy.endHar();
     }
@@ -666,6 +666,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         driver.manage()
                 .timeouts()
                 .setScriptTimeout(5, TimeUnit.SECONDS); // Affect only scripts run with executeAsyncScript()
+
 
         return driver;
     }
