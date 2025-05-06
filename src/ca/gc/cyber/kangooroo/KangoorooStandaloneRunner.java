@@ -1,11 +1,11 @@
 package ca.gc.cyber.kangooroo;
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.browser.KangoorooBrowser;
 import ca.gc.cyber.kangooroo.browser.KangoorooChromeBrowser;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 import ca.gc.cyber.kangooroo.report.KangoorooURL;
 import ca.gc.cyber.kangooroo.report.KangoorooURLReport;
-import ca.gc.cyber.kangooroo.report.KangoorooURLReport.DownloadStatus;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLRedirection;
 
@@ -51,16 +51,12 @@ public class KangoorooStandaloneRunner {
 
     private static String engineVersion = "-1";
 
-    public enum URLType {
-        PHISHING, SMISHING
-    }
-
     public static Logger getLogger() {
         return log;
     }
 
     public static KangoorooURLReport generateKangoorooReport(KangoorooResult result, Long processTime,
-            URL url, URLType urlType, String windowSize, String userAgent, boolean sanitizeSession,
+            URL url, String browserSettingName, BrowserSetting browserSetting, boolean sanitizeSession,
             List<String> messageLog) throws IOException {
 
         // There is a bug with browserup proxy where if you upstream proxy there will
@@ -106,8 +102,8 @@ public class KangoorooStandaloneRunner {
 
         kangoorooReport.setExperiment(engineInfo,
                 (result.isConnectionSuccess() && result.isFetchSuccess()) ? "SUCCESS" : "FAIL", messageLog,
-                (result.getStartTime() != null ) ? result.getStartTime().toString(): null, processTime, url.toExternalForm(), urlType.name(), windowSize,
-                userAgent, enabledModules.stream().collect(Collectors.toList()), result.getDownloadStatus());
+                (result.getStartTime() != null ) ? result.getStartTime().toString(): null, processTime, url.toExternalForm(), 
+                browserSettingName, browserSetting, enabledModules.stream().collect(Collectors.toList()), result.getDownloadStatus());
 
         if (enabledModules.contains("captcha")) {
             kangoorooReport.setCaptcha(result.getCaptchaResult());
@@ -150,7 +146,7 @@ public class KangoorooStandaloneRunner {
 
     private static void runKangooroo(boolean useSandbox, boolean useCaptchaSolver, boolean saveFiles,
             boolean saveOriginalHar, boolean sanitizeSession, File urlOutputDir, File urlTempDir,
-            KangoorooRunnerConf configuration, URL crawlUrl, String windowSize, String userAgent, URLType urlType,
+            KangoorooRunnerConf configuration, URL crawlUrl, BrowserSetting browserSetting,  String browserSettingName,
             boolean simpleResult)
             throws IOException {
 
@@ -161,24 +157,23 @@ public class KangoorooStandaloneRunner {
                 useSandbox, useCaptchaSolver, saveFiles);
 
         long start = System.currentTimeMillis();
-        KangoorooResult res = browser.get(crawlUrl, windowSize, userAgent);
+        KangoorooResult res = browser.get(crawlUrl, browserSetting);
         long processingTime = System.currentTimeMillis() - start;
 
         browser.browserShutdown();
 
-        createKangoorooOutput(urlOutputDir, configuration, crawlUrl, res, processingTime, saveOriginalHar, urlType,
+        createKangoorooOutput(urlOutputDir, configuration, crawlUrl, res, processingTime, saveOriginalHar, browserSettingName,
                 sanitizeSession, browser.getMessageLog().getMessagesAsList(), simpleResult);
 
     }
 
     private static void createKangoorooOutput(File urlOutputDir, KangoorooRunnerConf configuration, URL crawlUrl,
-            KangoorooResult res, long processingTime, boolean saveOriginalHar, URLType urlType, boolean sanitizeSession,
+            KangoorooResult res, long processingTime, boolean saveOriginalHar, String browserSettingName, boolean sanitizeSession,
             List<String> messageLog, boolean simpleResult)
             throws IOException {
 
-        var report = generateKangoorooReport(res, processingTime, crawlUrl, urlType,
-                configuration.getBrowserSettings().get(urlType.name()).getWindowSize(),
-                configuration.getBrowserSettings().get(urlType.name()).getUserAgent(),
+        var report = generateKangoorooReport(res, processingTime, crawlUrl, browserSettingName,
+                configuration.getBrowserSettings().get(browserSettingName),
                 sanitizeSession, messageLog);
 
         if (saveOriginalHar) {
@@ -199,6 +194,69 @@ public class KangoorooStandaloneRunner {
 
     }
 
+    public static KangoorooRunnerConf loadKangoorooConfiguration(String confFilePath, Map<String, Object> baseConf) throws IOException {
+        Yaml yml = new Yaml();
+
+        KangoorooRunnerConf configuration = null;
+        // load new configuration if exist
+        if (confFilePath != null) {
+            File confFile = new File(confFilePath);
+            if (!confFile.exists()) {
+                log.error("Configuration file specified: [" + confFile.getAbsolutePath() + "] does not exist.");
+                throw new IllegalArgumentException("Configuration file specified: [" + confFile.getAbsolutePath() + "] does not exist.");
+        }
+
+            Map<String, Object> secondConf = null;
+            try (var is = new FileInputStream(confFile)) {
+                secondConf = yml.load(is);
+            } catch (IOException e) {
+                throw e;
+            }
+
+            if (baseConf == null) {
+                getLogger().debug("base conf is null. Replace with configs specified in conf-file option.");
+                baseConf = secondConf;
+            } else {
+                getLogger().debug("both base conf and conf file (" + confFile.getAbsolutePath()
+                        + ") exists need to merge the two.");
+                for (var es : secondConf.entrySet()) {
+                    if ("version".equals(es.getKey())) {
+                        continue;
+                    }
+                    getLogger().debug("key: " + es.getKey());
+
+                    if (es.getKey().equals("browser_settings") && baseConf.containsKey("browser_settings")) {
+                        Map<String, Object> newSettings= yml.load( yml.dumpAsMap(es.getValue()));
+                        Map<String, Object> oldSettings= yml.load( yml.dumpAsMap( baseConf.get("browser_settings")));
+                        oldSettings.putAll(newSettings);
+                        baseConf.put("browser_settings", oldSettings);
+                        
+                        continue;
+                    }
+
+                    baseConf.put(es.getKey(), es.getValue());
+                }
+
+                
+
+
+            }
+
+        }
+
+        if (baseConf != null) {
+            configuration = GSON.fromJson(GSON.toJsonTree(baseConf), KangoorooRunnerConf.class);
+        }
+
+        if (configuration == null) {
+            getLogger().error("No configurations file found. Exit for now.");
+            throw new IllegalArgumentException("No configuration file found.");
+        }
+
+        return configuration;
+
+    }
+
     /**
      * Main entry point of Kangooroo.
      *
@@ -206,8 +264,8 @@ public class KangoorooStandaloneRunner {
      * @throws Throwable
      */
     public static void main(String[] args) throws Throwable {
-
         Yaml yml = new Yaml();
+
         Map<String, Object> baseConf = null;
         try (var is = KangoorooStandaloneRunner.class.getResourceAsStream(RESOURCES_CONF)) {
             baseConf = yml.load(is);
@@ -217,7 +275,7 @@ public class KangoorooStandaloneRunner {
         }
 
         String kangoorooVersion = baseConf != null && baseConf.containsKey("version") ? "v" + baseConf.get("version")
-                : "";
+                : "v0.0.0";
 
         CommandLineParser cliParser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -229,7 +287,7 @@ public class KangoorooStandaloneRunner {
         Options options = new Options();
         Option helpOption = new Option("h", "help", false, "Prints instructions.");
         Option urlOption = new Option("u", "url", true, "Full URL to crawl.");
-        Option urlTypeOption = new Option("ut", "url-type", true,
+        Option browserSettingsNameOption = new Option("bs", "browser-setting", true,
                 "URL Type can be one of: [PHISHING, SMISHING]. Default is PHISHING.");
         ;
         Option confFileOption = new Option("cf", "conf-file", true, "Specify specific configuration file location.");
@@ -252,7 +310,7 @@ public class KangoorooStandaloneRunner {
         options.addOption(modulesOption);
 
         options.addOption(helpOption);
-        options.addOption(urlTypeOption);
+        options.addOption(browserSettingsNameOption);
         options.addOption(urlOption);
 
         options.addOption(confFileOption);
@@ -277,9 +335,9 @@ public class KangoorooStandaloneRunner {
             return;
         }
 
+        enabledModules.clear();
         if (params.hasOption("modules")) {
             var modules = params.getOptionValue("modules").split(",");
-
             for (var mod : modules) {
                 if (ALLOWED_MODULES.contains(mod)) {
                     enabledModules.add(mod);
@@ -291,53 +349,14 @@ public class KangoorooStandaloneRunner {
 
         }
 
-        KangoorooRunnerConf configuration = null;
-        // load new configuration if exist
-        if (params.hasOption("conf-file")) {
-            File confFile = new File(params.getOptionValue("conf-file"));
-            if (!confFile.exists()) {
-                getLogger().error("Configuration file specified: [" + confFile.getAbsolutePath() + "] does not exist.");
-                return;
-            }
+        String confFilePath = params.hasOption("conf-file") ? params.getOptionValue("conf-file") : null;
+        KangoorooRunnerConf configuration = loadKangoorooConfiguration(confFilePath, baseConf); 
 
-            Map<String, Object> secondConf = null;
-            try (var is = new FileInputStream(confFile)) {
-                secondConf = yml.load(is);
-            } catch (IOException e) {
-                getLogger().error(e.getMessage());
-                throw e;
-            }
-
-            if (baseConf == null) {
-                getLogger().debug("base conf is null. Replace with configs specified in conf-file option.");
-                baseConf = secondConf;
-            } else {
-                getLogger().debug("both base conf and conf file (" + confFile.getAbsolutePath()
-                        + ") exists... need to merge the two.");
-                for (var es : secondConf.entrySet()) {
-                    if ("version".equals(es.getKey())) {
-                        continue;
-                    }
-                    getLogger().debug("key: " + es.getKey());
-                    baseConf.put(es.getKey(), es.getValue());
-                }
-            }
-
-        }
-
-        if (baseConf != null) {
-            configuration = GSON.fromJson(GSON.toJsonTree(baseConf), KangoorooRunnerConf.class);
-        }
-
-        if (configuration == null) {
-            getLogger().error("No configurations file found. Exit for now.");
-            throw new IllegalArgumentException("No configuration file found.");
-        }
 
         engineVersion = configuration.getVersion();
 
         String urlStr = params.getOptionValue("url");
-        URLType urlType = URLType.PHISHING;
+        String browserSettingName = "DEFAULT";
 
         boolean sanitizeSession = !params.hasOption("not-sanitize-session");
         boolean saveOriginalHar = !params.hasOption("not-save-har");
@@ -363,21 +382,18 @@ public class KangoorooStandaloneRunner {
             getLogger().info("We are using Captcha solver. Make sure that Whisper AI is configured on the computer.");
         }
 
-        if (params.hasOption("url-type")) {
-            try {
-                urlType = URLType.valueOf(params.getOptionValue("url-type"));
-            } catch (IllegalArgumentException e) {
-                getLogger().error("Invalid argument for (-ut --url-type): " + params.getOptionValue("url-type") +
-                        ". Choose one of: PHISHING, SMISHING.");
-                return;
-            }
+        if (params.hasOption("browser-setting") && !configuration.getBrowserSettings().containsKey(params.getOptionValue("browser-setting"))) {
+            getLogger().error("Invalid argument for (-bs --browser-setting): " + params.getOptionValue("browser-setting") +
+                    ". Choose one from browser settings in configuration file." );
+            return;
+        } else {
+            browserSettingName = params.hasOption("browser-setting") ? params.getOptionValue("browser-setting") : "DEFAULT";
         }
 
         // check the type of URL to crawl which decides the user agent and window size
         // that Kangooroo uses
-        var browserSetting = configuration.getBrowserSettings().get(urlType.name());
-        String userAgent = browserSetting.getUserAgent();
-        String windowSize = browserSetting.getWindowSize();
+        var browserSetting = configuration.getBrowserSettings().get(browserSettingName);
+
 
         URL crawlUrl = new URL(urlStr);
 
@@ -427,7 +443,7 @@ public class KangoorooStandaloneRunner {
 
         try {
             runKangooroo(useSandbox, useCaptchaSolver, saveFiles, saveOriginalHar, sanitizeSession, urlOutputDir,
-                    urlTempDir, configuration, crawlUrl, windowSize, userAgent, urlType, simplifyResult);
+                    urlTempDir, configuration, crawlUrl, browserSetting, browserSettingName, simplifyResult);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

@@ -1,11 +1,13 @@
 package ca.gc.cyber.kangooroo.browser;
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.After;
@@ -107,6 +109,25 @@ public class KangoorooBrowserTest {
 
     }
 
+    @Test
+    public void requestHeaderCanBeConfigured() {
+        testBrowser = new ConcreteTestKangoorooBrowser(
+                null, null, Optional.empty(), Optional.empty(), Optional.empty());
+
+        Map<String, String> headers = Map.of("Accept-Encoding", "test", "sec-ch-ua-platform", "Windows");
+            
+        var proxy = testBrowser.getPROXY(headers);
+
+        var proxyHeaders = proxy.getAllHeaders();
+
+        for (var key : headers.keySet()) {
+            assertEquals(headers.get(key), proxyHeaders.get(key));
+        }
+
+
+
+    }
+
     private class ConcreteTestKangoorooBrowser extends KangoorooBrowser {
 
         public ConcreteTestKangoorooBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
@@ -115,7 +136,7 @@ public class KangoorooBrowserTest {
         }
 
         @Override
-        protected KangoorooResult execute(URL initialURL, String windowSize, String userAgent) throws IOException {
+        protected KangoorooResult execute(URL initialURL, BrowserSetting browserSetting) throws IOException {
             return null;
         }
 

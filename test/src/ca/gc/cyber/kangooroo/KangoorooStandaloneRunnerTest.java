@@ -1,5 +1,6 @@
 package ca.gc.cyber.kangooroo;
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.browser.KangoorooChromeBrowser;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 import ca.gc.cyber.kangooroo.report.WebpageReport;
@@ -7,7 +8,9 @@ import ca.gc.cyber.kangooroo.utils.log.MessageLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
@@ -15,7 +18,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -27,6 +32,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import com.browserup.harreader.HarReader;
 import com.browserup.harreader.HarReaderException;
@@ -51,6 +57,7 @@ public class KangoorooStandaloneRunnerTest {
     private final File testConfigFile = new File("./conf2.yml");
     private final File testOutputDir = new File("./output2");
     private final File testHarFile = new File("./test/data/session.har");
+    private final File defaultConfigFile = new File("./test/data/default_conf.yml");
     private Har har;
 
     @Before
@@ -141,13 +148,11 @@ public class KangoorooStandaloneRunnerTest {
         try (MockedStatic<KangoorooStandaloneRunner> runner = Mockito.mockStatic(KangoorooStandaloneRunner.class,
                 Mockito.CALLS_REAL_METHODS)) {
 
-            Logger log = LoggerFactory.getLogger(KangoorooStandaloneRunner.class);
-            Logger spyLog = Mockito.spy(log);
-            runner.when(KangoorooStandaloneRunner::getLogger).thenReturn(spyLog);
-
             KangoorooStandaloneRunner.main(new String[] { "-u", "http://test.com", "-cf", "not_exist.txt" });
 
-            verify(spyLog).error(matches("does not exist\\.$"));
+            // verify(spyLog).error(matches("does not exist\\.$"));
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("not_exist.txt"));
         }
     }
 
@@ -161,7 +166,7 @@ public class KangoorooStandaloneRunnerTest {
             Logger spyLog = Mockito.spy(log);
             runner.when(KangoorooStandaloneRunner::getLogger).thenReturn(spyLog);
 
-            KangoorooStandaloneRunner.main(new String[] { "-u", "http://test.com", "-ut", "NOT_EXIST" });
+            KangoorooStandaloneRunner.main(new String[] { "-u", "http://test.com", "-bs", "NOT_EXIST" });
 
             verify(spyLog).error(matches("^Invalid argument"));
         }
@@ -232,7 +237,7 @@ public class KangoorooStandaloneRunnerTest {
                 KangoorooChromeBrowser.class,
                 (mock, context) -> {
                     constructorArgs.addAll(context.arguments());
-                    when(mock.get(any(), anyString(), anyString()))
+                    when(mock.get(any(), any()))
                             .thenReturn(new KangoorooResult(har, url));
                     when(mock.getMessageLog())
                             .thenReturn(new MessageLog());
@@ -244,7 +249,7 @@ public class KangoorooStandaloneRunnerTest {
             // mock static method of KangoorooStandalone runner
             mockedKangoorooRunner
                     .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
-                            any(), any(), anyString(), anyString(), anyBoolean(), any()))
+                            any(), anyString(), any(), anyBoolean(), any()))
                     .thenReturn(null);
 
             KangoorooStandaloneRunner.main(new String[] { "-u", urlString });
@@ -268,7 +273,7 @@ public class KangoorooStandaloneRunnerTest {
         }
     }
 
-    // @Test
+    @Test
     public void kangoorooBrowserArgumentsCanBeOverriden() throws Throwable {
 
         List<Object> constructorArgs = new ArrayList<>();
@@ -287,7 +292,7 @@ public class KangoorooStandaloneRunnerTest {
                 KangoorooChromeBrowser.class,
                 (mock, context) -> {
                     constructorArgs.addAll(context.arguments());
-                    when(mock.get(any(), anyString(), anyString()))
+                    when(mock.get(any(), any()))
                             .thenReturn(new KangoorooResult(har, url));
                     when(mock.getMessageLog())
                             .thenReturn(new MessageLog());
@@ -297,12 +302,14 @@ public class KangoorooStandaloneRunnerTest {
 
             // mock static method of KangoorooStandalone runner
             mockedKangoorooRunner
-                    .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
-                            any(), any(), anyString(), anyString(), anyBoolean(), any()))
+            .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
+            any(), anyString(), any(), anyBoolean(), any()))
                     .thenReturn(null);
 
             KangoorooStandaloneRunner.main(new String[] { "-cf",
                     testConfigFile.getPath(), "-u", urlString });
+
+            constructorArgs.forEach(x -> log.warn(x.toString()));
             assertTrue("There should be a folder of outputDir/{url_md5}.", (new File(testOutputDir, urlMd5)).exists());
 
             // make sure kangooroo chromedriver is set up with the correct arguments
@@ -322,7 +329,7 @@ public class KangoorooStandaloneRunnerTest {
         }
     }
 
-    // @Test
+    @Test
     public void proxyConfigCannotHaveOnlyIpAndNotPort() throws Throwable {
         String testConfig = "kang-upstream-proxy:\n" +
                 " ip: '127.0.0.1'";
@@ -346,7 +353,7 @@ public class KangoorooStandaloneRunnerTest {
 
     }
 
-    // @Test
+    @Test
     public void proxyConfigCannotHaveOnlyPortAndNotIp() throws Throwable {
         String testConfig = "kang-upstream-proxy:\n" +
                 " port: '12345'";
@@ -371,7 +378,7 @@ public class KangoorooStandaloneRunnerTest {
 
     }
 
-    // @Test
+    @Test
     public void kangoorooBrowserAllowForProxyWithOnlyIpAndPort() throws Throwable {
 
         List<Object> constructorArgs = new ArrayList<>();
@@ -390,7 +397,7 @@ public class KangoorooStandaloneRunnerTest {
                 KangoorooChromeBrowser.class,
                 (mock, context) -> {
                     constructorArgs.addAll(context.arguments());
-                    when(mock.get(any(), anyString(), anyString()))
+                    when(mock.get(any(), any()))
                             .thenReturn(new KangoorooResult(har, url));
                     when(mock.getMessageLog())
                             .thenReturn(new MessageLog());
@@ -400,8 +407,8 @@ public class KangoorooStandaloneRunnerTest {
 
             // mock static method of KangoorooStandalone runner
             mockedKangoorooRunner
-                    .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
-                            any(), any(), anyString(), anyString(), anyBoolean(), any()))
+            .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
+            any(), anyString(), any(), anyBoolean(), any()))
                     .thenReturn(null);
 
             KangoorooStandaloneRunner.main(new String[] { "-cf",
@@ -426,7 +433,7 @@ public class KangoorooStandaloneRunnerTest {
         try (MockedConstruction<KangoorooChromeBrowser> chromeBrowser = Mockito.mockConstruction(
             KangoorooChromeBrowser.class,
             (mock, context) -> {
-                when(mock.get(any(), anyString(), anyString()))
+                when(mock.get(any(), any()))
                         .thenReturn(new KangoorooResult(har, url));
                 when(mock.getMessageLog())
                         .thenReturn(new MessageLog());
@@ -438,8 +445,8 @@ public class KangoorooStandaloneRunnerTest {
             
             // mock static method of KangoorooStandalone runner
             mockedKangoorooRunner
-                    .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
-                            any(), any(), anyString(), anyString(), anyBoolean(), any()))
+            .when(() -> KangoorooStandaloneRunner.generateKangoorooReport(any(), anyLong(),
+            any(), anyString(), any(), anyBoolean(), any()))
                     .thenReturn(null);
 
             KangoorooStandaloneRunner.main(new String[] { "-u", urlString });
@@ -450,5 +457,49 @@ public class KangoorooStandaloneRunnerTest {
 
         }
     }
+
+    @Test
+    public void shouldMergeConfigFileCorrectly() throws Throwable {
+        Yaml yml = new Yaml();
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+
+        String correctVersion = "vtesting";
+        String testConfig = "browser_settings:\n" + //
+                        "  NEW_TEST:\n" + //
+                        "    user_agent: \"test_ua\"\n" + //
+                        "    window_size: \"0x0\"\n" + //
+                        "    request_headers: \n" + //
+                        "      \"key_a\": \"key_b\"";
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
+
+        assertEquals("Should still have the default version number", correctVersion, newConf.getVersion());
+        
+        newConf.getBrowserSettings().keySet();
+
+        Set<String> profile_names = Set.of("DEFAULT", "PHISHING", "SMISHING", "NEW_TEST");
+
+        assertTrue("All profile names should be loaded in browser setting", 
+        profile_names.containsAll(newConf.getBrowserSettings().keySet()) && newConf.getBrowserSettings().keySet().containsAll(profile_names));
+
+        BrowserSetting testSetting = newConf.getBrowserSettings().get("NEW_TEST");
+
+        assertEquals("test_ua", testSetting.getUserAgent());
+        assertEquals("0x0", testSetting.getWindowSize());
+        assertTrue(testSetting.getRequestHeaders().get("key_a").equals("key_b"));
+
+    }
+
+    
 
 }

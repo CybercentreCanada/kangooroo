@@ -1,5 +1,6 @@
 package ca.gc.cyber.kangooroo.browser;
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 
 import java.io.File;
@@ -96,11 +97,11 @@ public class KangoorooHTTPClient extends KangoorooBrowser {
 
 
     @Override
-    protected KangoorooResult execute(URL initialURL, String windowSize, String userAgent) throws IOException {
+    protected KangoorooResult execute(URL initialURL, BrowserSetting browserSetting) throws IOException {
         String initialURLMd5 = DigestUtils.md5Hex(initialURL.toExternalForm());
         log.info("Downloading using HTTPClient: " + initialURL + " [" + initialURLMd5 + "]");
 
-        Pair<Har, URL> pair = downloadFileWithHar(initialURL, userAgent, tempFolder);
+        Pair<Har, URL> pair = downloadFileWithHar(initialURL, browserSetting.getUserAgent(), tempFolder);
 
         KangoorooResult result = new KangoorooResult(pair);
         processResult(result, tempFolder, resultFolder);
