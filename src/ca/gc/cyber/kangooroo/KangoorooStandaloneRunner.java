@@ -220,15 +220,32 @@ public class KangoorooStandaloneRunner {
                 getLogger().debug("both base conf and conf file (" + confFile.getAbsolutePath()
                         + ") exists need to merge the two.");
                 for (var es : secondConf.entrySet()) {
+                    
+                    // do not replace version number in resource file
                     if ("version".equals(es.getKey())) {
                         continue;
                     }
                     getLogger().debug("key: " + es.getKey());
-
+                    
+                    // custom logic for modifying browser settings. Make sure they have default values
                     if (es.getKey().equals("browser_settings") && baseConf.containsKey("browser_settings")) {
                         Map<String, Object> newSettings= yml.load( yml.dumpAsMap(es.getValue()));
-                        Map<String, Object> oldSettings= yml.load( yml.dumpAsMap( baseConf.get("browser_settings")));
-                        oldSettings.putAll(newSettings);
+                        Map<String, Object> oldSettings= yml.load( yml.dumpAsMap( baseConf.get("browser_settings"))); 
+                        
+                        Map<String, String> defaultSettings =  yml.load( yml.dumpAsMap( oldSettings.get("DEFAULT")));
+                        
+                        for (var set: newSettings.entrySet()) {
+                            Map<String, String> setting = yml.load(yml.dumpAsMap(set.getValue()));
+
+                            // make sure all settings have value sets 
+                            setting.putIfAbsent("user_agent", defaultSettings.get("user_agent"));
+                            setting.putIfAbsent("window_size", defaultSettings.get("window_size"));
+                            
+                            oldSettings.put(set.getKey(), setting);
+
+                        }
+
+                        
                         baseConf.put("browser_settings", oldSettings);
                         
                         continue;
@@ -288,7 +305,7 @@ public class KangoorooStandaloneRunner {
         Option helpOption = new Option("h", "help", false, "Prints instructions.");
         Option urlOption = new Option("u", "url", true, "Full URL to crawl.");
         Option browserSettingsNameOption = new Option("bs", "browser-setting", true,
-                "URL Type can be one of: [PHISHING, SMISHING]. Default is PHISHING.");
+                "Browser setting type as defined in conf.yml.");
         ;
         Option confFileOption = new Option("cf", "conf-file", true, "Specify specific configuration file location.");
         Option noSandboxOption = new Option("ns", "no-sandbox", false,
