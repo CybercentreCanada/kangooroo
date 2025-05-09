@@ -227,12 +227,23 @@ public class KangoorooStandaloneRunner {
                     }
                     getLogger().debug("key: " + es.getKey());
                     
+                    
+                    
+
                     // custom logic for modifying browser settings. Make sure they have default values
                     if (es.getKey().equals("browser_settings") && baseConf.containsKey("browser_settings")) {
                         Map<String, Object> newSettings= yml.load( yml.dumpAsMap(es.getValue()));
                         Map<String, Object> oldSettings= yml.load( yml.dumpAsMap( baseConf.get("browser_settings"))); 
-                        
                         Map<String, String> defaultSettings =  yml.load( yml.dumpAsMap( oldSettings.get("DEFAULT")));
+                        
+                        // load the new default value if there is one
+                        if (newSettings.containsKey("DEFAULT")) {
+                            Map<String, String> newDefault = yml.load(yml.dumpAsMap(newSettings.get("DEFAULT")));
+                            for (var keyVal: newDefault.entrySet()) {
+                                defaultSettings.put(keyVal.getKey(), keyVal.getValue());
+                            }
+                        }
+                        
                         
                         for (var set: newSettings.entrySet()) {
                             Map<String, String> setting = yml.load(yml.dumpAsMap(set.getValue()));
