@@ -501,5 +501,68 @@ public class KangoorooStandaloneRunnerTest {
     }
 
     
+    @Test
+    public void partialBrowserSettingDefaultConfigStillHaveDefault() throws Throwable {
+        Yaml yml = new Yaml();
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+
+        String testConfig = "browser_settings:\n" + //
+                        "  DEFAULT:\n" + //
+                        "    user_agent: \"test_ua\"\n" + //
+                        "    request_headers: \n" + //
+                        "      \"key_a\": \"key_b\"";
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
+        log.info(newConf.toString());
+
+        BrowserSetting testSetting = newConf.getBrowserSettings().get("DEFAULT");
+
+        assertEquals("test_ua", testSetting.getUserAgent());
+        assertEquals("1280x720", testSetting.getWindowSize());
+
+    }
+
+    @Test
+    public void partialBrowserSettingConfigStillHaveDefault() throws Throwable {
+        Yaml yml = new Yaml();
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+
+        String testConfig = "browser_settings:\n" + //
+                        "  CUSTOM:\n" + //
+                        "    user_agent: \"test_ua\"\n" + //
+                        "    request_headers: \n" + //
+                        "      \"key_a\": \"key_b\"";
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
+
+        log.info(newConf.toString());
+
+        BrowserSetting testSetting = newConf.getBrowserSettings().get("CUSTOM");
+
+        assertEquals("test_ua", testSetting.getUserAgent());
+        assertEquals("1280x720", testSetting.getWindowSize());
+
+    }
+    
 
 }
