@@ -234,11 +234,11 @@ public class KangoorooStandaloneRunner {
                     if (es.getKey().equals("browser_settings") && baseConf.containsKey("browser_settings")) {
                         Map<String, Object> newSettings= yml.load( yml.dumpAsMap(es.getValue()));
                         Map<String, Object> oldSettings= yml.load( yml.dumpAsMap( baseConf.get("browser_settings"))); 
-                        Map<String, String> defaultSettings =  yml.load( yml.dumpAsMap( oldSettings.get("DEFAULT")));
+                        Map<String, Object> defaultSettings =  yml.load( yml.dumpAsMap( oldSettings.get("DEFAULT")));
                         
                         // load the new default value if there is one
                         if (newSettings.containsKey("DEFAULT")) {
-                            Map<String, String> newDefault = yml.load(yml.dumpAsMap(newSettings.get("DEFAULT")));
+                            Map<String, Object> newDefault = yml.load(yml.dumpAsMap(newSettings.get("DEFAULT")));
                             for (var keyVal: newDefault.entrySet()) {
                                 defaultSettings.put(keyVal.getKey(), keyVal.getValue());
                             }
@@ -246,7 +246,7 @@ public class KangoorooStandaloneRunner {
                         
                         
                         for (var set: newSettings.entrySet()) {
-                            Map<String, String> setting = yml.load(yml.dumpAsMap(set.getValue()));
+                            Map<String, Object> setting = yml.load(yml.dumpAsMap(set.getValue()));
 
                             // make sure all settings have value sets 
                             setting.putIfAbsent("user_agent", defaultSettings.get("user_agent"));
