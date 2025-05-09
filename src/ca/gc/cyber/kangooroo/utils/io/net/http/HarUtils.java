@@ -2,7 +2,6 @@ package ca.gc.cyber.kangooroo.utils.io.net.http;
 
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLRedirection;
 import ca.gc.cyber.kangooroo.utils.io.net.url.URLUtils;
-import ca.gc.cyber.kangooroo.KangoorooStandaloneRunner.URLType;
 import ca.gc.cyber.kangooroo.utils.data.FileHashes;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;

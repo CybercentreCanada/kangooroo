@@ -1,6 +1,7 @@
 package ca.gc.cyber.kangooroo.browser;
 
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
 import ca.gc.cyber.kangooroo.utils.log.MessageLog;
 
@@ -77,8 +78,8 @@ public abstract class KangoorooBrowser {
     }
 
 
-    public KangoorooResult get(URL initialURL, String windowSize, String userAgent) throws IOException {
-        KangoorooResult result = execute(initialURL, windowSize, userAgent);
+    public KangoorooResult get(URL initialURL, BrowserSetting browserSetting) throws IOException {
+        KangoorooResult result = execute(initialURL, browserSetting);
 
         displayResources(result.getHar());
 
@@ -86,7 +87,7 @@ public abstract class KangoorooBrowser {
     }
 
 
-    protected abstract KangoorooResult execute(URL initialURL, String windowSize, String userAgent) throws IOException;
+    protected abstract KangoorooResult execute(URL initialURL, BrowserSetting browserSetting) throws IOException;
 
 
     /**
@@ -254,7 +255,12 @@ public abstract class KangoorooBrowser {
      *
      * @return
      */
-    private BrowserUpProxy createProxy() {
+
+     private BrowserUpProxy createProxy() { 
+        return createProxy(null);
+     }
+
+    private BrowserUpProxy createProxy(Map<String, String> requestHeader) {
         BrowserUpProxy proxy = new BrowserUpProxyServer();
 
         proxy.enableHarCaptureTypes(getHarCaptureTypes());
@@ -262,6 +268,10 @@ public abstract class KangoorooBrowser {
         proxy.setRequestTimeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
         proxy.setConnectTimeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
         proxy.setTrustAllServers(true);
+
+        if (requestHeader != null) {
+            proxy.addHeaders(requestHeader);
+        }
 
         if (upstreamProxy.isPresent()) {
             proxy.setChainedProxy(upstreamProxy.get());
@@ -282,7 +292,8 @@ public abstract class KangoorooBrowser {
                     public HttpResponse proxyToServerRequest(HttpObject httpObject) {
                         if (httpObject instanceof HttpRequest) {
                             // Remove header 'VIA' that tells the remote server we are using BrowserMobProxy
-                            ((HttpRequest) httpObject).headers().remove(HttpHeaders.Names.VIA);
+                           var header = ((HttpRequest) httpObject).headers();
+                           header.remove(HttpHeaders.Names.VIA); 
                         }
                         return super.proxyToServerRequest(httpObject);
                     }
@@ -290,6 +301,7 @@ public abstract class KangoorooBrowser {
                 };
             }
         });
+        
 
         proxy.start();
 
@@ -303,6 +315,11 @@ public abstract class KangoorooBrowser {
      * @return
      */
     public final synchronized BrowserUpProxy getPROXY() {
+        return getPROXY(null);
+    }
+
+    public final synchronized BrowserUpProxy getPROXY(Map<String, String> requestHeader) {
+
         String threadName = Thread.currentThread().getName();
 
         log.debug("A proxy is created for thread name: " + threadName);
@@ -313,10 +330,11 @@ public abstract class KangoorooBrowser {
         }
 
         if (!PROXY_MAP.containsKey(threadName)) {
-            PROXY_MAP.put(threadName, createProxy());
+            PROXY_MAP.put(threadName, createProxy(requestHeader));
         }
 
         return PROXY_MAP.get(threadName);
+
     }
 
 

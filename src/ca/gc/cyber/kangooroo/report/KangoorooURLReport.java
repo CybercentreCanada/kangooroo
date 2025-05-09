@@ -1,6 +1,7 @@
 package ca.gc.cyber.kangooroo.report;
 
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.report.KangoorooResult.CaptchaResult;
 import ca.gc.cyber.kangooroo.utils.data.FileHashes;
 import ca.gc.cyber.kangooroo.utils.io.net.http.HarUtils;
@@ -47,11 +48,11 @@ public class KangoorooURLReport {
 
     public void setExperiment(Map<String, String> engineInfo, 
     String status, List<String> messages, String startTime, 
-    Long processTime,String url, String urlType, String windowSize, String userAgent, List<String> modules,
+    Long processTime,String url, String browserSettingName, BrowserSetting browserSetting, List<String> modules,
     DownloadStatus downloadStatus) {
         this.experiment = new Experimentation(engineInfo);
         this.experiment.setExecution(status, messages, startTime, processTime, downloadStatus);
-        this.experiment.setParams(url, urlType, windowSize, userAgent, modules);
+        this.experiment.setParams(url, browserSettingName, browserSetting, modules);
     }
 
 
@@ -98,18 +99,20 @@ public class KangoorooURLReport {
             this.execution = new Execution(status, messages, startTime, processTime, downloadStatus);
         }
 
-        public void setParams(String url, String urlType, String windowSize, String userAgent, List<String> modules) {
-            this.params = new Parameters(url, urlType, windowSize, userAgent, modules);
+        public void setParams(String url, String browserSettingName, BrowserSetting browserSetting, List<String> modules) {
+            this.params = new Parameters(url, browserSettingName, browserSetting.getWindowSize(),browserSetting.getUserAgent(), 
+            modules, browserSetting.getRequestHeaders());
         }
 
         @Data
         @AllArgsConstructor
         class Parameters {
             String url;
-            String urlType;
+            String browserSettingName;
             String windowSize;
             String userAgent;
             List<String> modules;
+            Map<String, String> requestHeaders;
 
             
         }

@@ -54,6 +54,8 @@ public class KangoorooRunnerConf {
         private String userAgent;
         @SerializedName(value = "window_size")
         private String windowSize;
+        @SerializedName(value = "request_headers")
+        private Map<String, String> requestHeaders;
 
     }
 

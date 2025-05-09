@@ -1,5 +1,6 @@
 package ca.gc.cyber.kangooroo.browser;
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.browser.chrome.ChromeExtender;
 import ca.gc.cyber.kangooroo.browser.chrome.CustomChromeDriver;
 import ca.gc.cyber.kangooroo.report.KangoorooResult;
@@ -11,7 +12,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -79,7 +79,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
     private static final Logger log = LoggerFactory.getLogger(KangoorooChromeBrowser.class);
 
     private static final File CHROME_DRIVER_EXECUTABLE = new File("chromedriver");
-    private static final int DEFAULT_PAGE_LOAD_TIMEOUT = 60;
+    private static final int DEFAULT_PAGE_LOAD_TIMEOUT = 40;
     private static final int MAX_SCREENSHOT_HEIGHT = 10_000;
     private static final CaptureType[] CAPTURE_TYPES = new CaptureType[] {
             CaptureType.REQUEST_HEADERS,
@@ -126,12 +126,13 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
     }
 
     @Override
-    protected KangoorooResult execute(URL initialURL, String windowSize, String userAgent) {
+    protected KangoorooResult execute(URL initialURL, BrowserSetting browserSetting) {
 
         String initialUrlMd5 = DigestUtils.md5Hex(initialURL.toExternalForm());
         log.info("Fetching using Chrome: " + initialURL + " [" + initialUrlMd5 + "]");
 
-        RemoteWebDriver driver = createDriver(userAgent, windowSize, tempFolder);
+        RemoteWebDriver driver = createDriver(browserSetting.getUserAgent(), browserSetting.getWindowSize(), tempFolder, 
+        browserSetting.getRequestHeaders());
         AudioCaptchaSolver captchaSolver = new AudioCaptchaSolver(driver);
 
         KangoorooResult.CaptchaResult captResult = KangoorooResult.CaptchaResult.NONE;
@@ -142,10 +143,10 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             driver.getWindowHandle();
 
             log.debug("Output folder: " + resultFolder);
-            log.debug("Main tab: " + driver.getWindowHandle());
+            log.debug("Main tab: " + driver.getWindowHandle(), browserSetting.getRequestHeaders());
 
             // open the webpage
-            Har har = get(driver, initialURL.toExternalForm());
+            Har har = get(driver, initialURL.toExternalForm(), browserSetting.getRequestHeaders());
 
             if (useCaptchaSolver) {
                 captResult = captchaSolver.removeCaptcha(tempFolder);
@@ -154,7 +155,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             downloadStatus = checkDownloadStatus();
 
             // process result, get favicon, screenshots etc
-            pair = processResult(har, userAgent, driver, tempFolder, resultFolder, downloadStatus);
+            pair = processResult(har, browserSetting.getUserAgent(), driver, tempFolder, resultFolder, downloadStatus);
             driver.manage().getCookies().stream().forEach((var cookie) -> {
                 cookies.put(cookie.getName(), cookie.getValue());
             });
@@ -295,9 +296,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      * This method also returns the HAR object that records all network interaction
      * with the website
      */
-    private Har get(WebDriver driver, String url) {
-        BrowserUpProxy proxy = getPROXY();
-
+    private Har get(WebDriver driver, String url, Map<String, String> requestHeader) {
+        BrowserUpProxy proxy = getPROXY(requestHeader);
         proxy.newHar();
         try {
             driver.manage().timeouts().pageLoadTimeout(DEFAULT_PAGE_LOAD_TIMEOUT, TimeUnit.SECONDS);
@@ -565,9 +565,9 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
      * @param temporaryFolder
      * @return
      */
-    private RemoteWebDriver createDriver(String userAgent, String windowSize, File temporaryFolder) {
-        Proxy seleniumProxy = ClientUtil.createSeleniumProxy(getPROXY());
-        seleniumProxy.setSslProxy("localhost:" + getPROXY().getPort());
+    private RemoteWebDriver createDriver(String userAgent, String windowSize, File temporaryFolder, Map<String, String> requestHeader) {
+        Proxy seleniumProxy = ClientUtil.createSeleniumProxy(getPROXY(requestHeader));
+        seleniumProxy.setSslProxy("localhost:" + getPROXY(requestHeader).getPort());
 
         LoggingPreferences logPrefs = new LoggingPreferences();
         logPrefs.enable(LogType.BROWSER, Level.ALL);
@@ -756,7 +756,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             BrowserUpProxyServer proxy = new BrowserUpProxyServer();
             
             proxy.start();
-            RemoteWebDriver driver = createDriver("", "", new File("tmp"));
+            RemoteWebDriver driver = createDriver("", "", new File("tmp"), null);
             driver.get("file:///" + Paths.get("etc", "unicode-test.html").toAbsolutePath());
             ChromeExtender ex = new ChromeExtender((CustomChromeDriver) driver);
             Set<String> fonts = ex.getRenderedFonts("dd"); // dd is the element <dd>...</dd> as seen in the
