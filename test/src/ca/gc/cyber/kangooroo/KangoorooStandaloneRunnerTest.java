@@ -601,5 +601,40 @@ public class KangoorooStandaloneRunnerTest {
 
     }
     
+    
+    @Test
+    public void partialCustomDefaultSettingsMergeWithKangoorooDefault() throws Throwable {
+        Yaml yml = new Yaml();
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+
+        String testConfig = "browser_settings:\n" + //
+                        "  DEFAULT:\n" + //
+                        "    request_headers: \n" + //
+                        "      \"key_a\": \"key_b\" \n" +
+                        "  CUSTOM:\n" + //
+                        "    user_agent: \"custom_ua\"\n";
+
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
+
+        log.debug(newConf.toString());
+
+        BrowserSetting testSetting = newConf.getBrowserSettings().get("CUSTOM");
+
+        assertEquals("custom_ua", testSetting.getUserAgent());
+        assertEquals("1280x720", testSetting.getWindowSize());
+        assertEquals("key_b", testSetting.getRequestHeaders().get("key_a"));
+
+    }
 
 }
