@@ -523,7 +523,7 @@ public class KangoorooStandaloneRunnerTest {
 
 
         var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
-        log.info(newConf.toString());
+        log.debug(newConf.toString());
 
         BrowserSetting testSetting = newConf.getBrowserSettings().get("DEFAULT");
 
@@ -555,7 +555,7 @@ public class KangoorooStandaloneRunnerTest {
 
         var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
 
-        log.info(newConf.toString());
+        log.debug(newConf.toString());
 
         BrowserSetting testSetting = newConf.getBrowserSettings().get("CUSTOM");
 

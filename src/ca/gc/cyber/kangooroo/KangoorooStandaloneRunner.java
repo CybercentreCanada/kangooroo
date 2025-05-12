@@ -248,9 +248,11 @@ public class KangoorooStandaloneRunner {
                         for (var set: newSettings.entrySet()) {
                             Map<String, Object> setting = yml.load(yml.dumpAsMap(set.getValue()));
 
-                            // make sure all settings have value sets 
-                            setting.putIfAbsent("user_agent", defaultSettings.get("user_agent"));
-                            setting.putIfAbsent("window_size", defaultSettings.get("window_size"));
+                            // if not custom value, then we add default values
+                            for (var defaultSet: defaultSettings.entrySet()) {
+                                setting.putIfAbsent(defaultSet.getKey(), defaultSet.getValue());
+                            }
+
                             
                             oldSettings.put(set.getKey(), setting);
 
