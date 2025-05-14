@@ -470,11 +470,11 @@ public class KangoorooStandaloneRunnerTest {
 
         String correctVersion = "vtesting";
         String testConfig = "browser_settings:\n" + //
-                        "  NEW_TEST:\n" + //
-                        "    user_agent: \"test_ua\"\n" + //
-                        "    window_size: \"0x0\"\n" + //
-                        "    request_headers: \n" + //
-                        "      \"key_a\": \"key_b\"";
+                            "  NEW_TEST:\n" + //
+                            "    user_agent: \"test_ua\"\n" + //
+                            "    window_size: \"0x0\"\n" + //
+                            "    request_headers: \n" + //
+                            "      \"key_a\": \"key_b\"";
 
         try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
             outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
@@ -512,10 +512,10 @@ public class KangoorooStandaloneRunnerTest {
         } 
 
         String testConfig = "browser_settings:\n" + //
-                        "  DEFAULT:\n" + //
-                        "    user_agent: \"test_ua\"\n" + //
-                        "    request_headers: \n" + //
-                        "      \"key_a\": \"key_b\"";
+                            "  DEFAULT:\n" + //
+                            "    user_agent: \"test_ua\"\n" + //
+                            "    request_headers: \n" + //
+                            "      \"key_a\": \"key_b\"";
 
         try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
             outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
@@ -543,10 +543,10 @@ public class KangoorooStandaloneRunnerTest {
         } 
 
         String testConfig = "browser_settings:\n" + //
-                        "  CUSTOM:\n" + //
-                        "    user_agent: \"test_ua\"\n" + //
-                        "    request_headers: \n" + //
-                        "      \"key_a\": \"key_b\"";
+                            "  CUSTOM:\n" + //
+                            "    user_agent: \"test_ua\"\n" + //
+                            "    request_headers: \n" + //
+                            "      \"key_a\": \"key_b\"";
 
         try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
             outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
@@ -576,12 +576,12 @@ public class KangoorooStandaloneRunnerTest {
         } 
 
         String testConfig = "browser_settings:\n" + //
-                        "  DEFAULT:\n" + //
-                        "    window_size: \"default_window_size\"\n" + //
-                        "    request_headers: \n" + //
-                        "      \"key_a\": \"key_b\" \n" +
-                        "  CUSTOM:\n" + //
-                        "    user_agent: \"custom_ua\"\n";
+                            "  DEFAULT:\n" + //
+                            "    window_size: \"default_window_size\"\n" + //
+                            "    request_headers: \n" + //
+                            "      \"key_a\": \"key_b\" \n" +
+                            "  CUSTOM:\n" + //
+                            "    user_agent: \"custom_ua\"\n";
 
 
         try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
@@ -613,11 +613,11 @@ public class KangoorooStandaloneRunnerTest {
         } 
 
         String testConfig = "browser_settings:\n" + //
-                        "  DEFAULT:\n" + //
-                        "    request_headers: \n" + //
-                        "      \"key_a\": \"key_b\" \n" +
-                        "  CUSTOM:\n" + //
-                        "    user_agent: \"custom_ua\"\n";
+                            "  DEFAULT:\n" + //
+                            "    request_headers: \n" + //
+                            "      \"key_a\": \"key_b\" \n" +
+                            "  CUSTOM:\n" + //
+                            "    user_agent: \"custom_ua\"\n";
 
 
         try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
@@ -634,6 +634,37 @@ public class KangoorooStandaloneRunnerTest {
         assertEquals("custom_ua", testSetting.getUserAgent());
         assertEquals("1280x720", testSetting.getWindowSize());
         assertEquals("key_b", testSetting.getRequestHeaders().get("key_a"));
+
+    }
+
+    @Test
+    public void kangoorooConfShouldIgonreUnknownProperty() throws Throwable {
+        Yaml yml = new Yaml();
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+
+        String testConfig = "browser_settings:\n" + //
+                            "  DEFAULT:\n" + //
+                            "    user: blah\n" + //
+                            "    request_headers: \n" + //
+                            "      \"key_a\": \"key_b\" \n" ;
+
+
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
+
+        log.debug(newConf.toString());
+
+        
 
     }
 
