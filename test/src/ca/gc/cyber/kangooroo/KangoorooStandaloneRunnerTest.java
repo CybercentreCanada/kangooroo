@@ -107,9 +107,7 @@ public class KangoorooStandaloneRunnerTest {
     public void loadingTestHarFile() throws HarReaderException {
         var harFile = new HarReader().readFromFile(testHarFile);
 
-        log.info(harFile.toString());
-
-        log.info("we did the HAR stuff?");
+        log.debug(harFile.toString());
     }
 
 
@@ -497,7 +495,39 @@ public class KangoorooStandaloneRunnerTest {
         assertEquals("test_ua", testSetting.getUserAgent());
         assertEquals("0x0", testSetting.getWindowSize());
         assertTrue(testSetting.getRequestHeaders().get("key_a").equals("key_b"));
+        assertEquals(1, testSetting.getRequestHeaders().keySet().size());
 
+    }
+
+    @Test
+    public void emptyRequestHeaderLoadsDefaultHeaderInstead() throws Throwable {
+        Yaml yml = new Yaml();
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+        String testConfig = "browser_settings:\n" + //
+                            "  NEW_TEST:\n" + //
+                            "    user_agent: \"test_ua\"\n" + //
+                            "    window_size: \"0x0\"\n" + //
+                            "    request_headers: \n";
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);   
+        log.debug(newConf.toString()); 
+
+        BrowserSetting testSetting = newConf.getBrowserSettings().get("NEW_TEST");
+
+        assertEquals("test_ua", testSetting.getUserAgent());
+        assertEquals("0x0", testSetting.getWindowSize());
+        assertEquals(1, testSetting.getRequestHeaders().size());
+        assertEquals("valueB", testSetting.getRequestHeaders().get("valueA"));
     }
 
     
@@ -664,6 +694,40 @@ public class KangoorooStandaloneRunnerTest {
 
         log.debug(newConf.toString());
 
+        
+
+    }
+
+    
+    @Test
+    public void emptyConfigShouldUseAllDefault() throws Throwable {
+        Yaml yml = new Yaml();
+
+
+        Map<String, Object> baseConf = null;
+
+        try (var is = new FileInputStream(defaultConfigFile)) {
+            baseConf = yml.load(is);
+        } 
+
+        String testConfig = "browser_settings:\n" + //
+                            "  TEST:\n" + //
+                            "    user: blah\n" ;
+
+
+
+        try (FileOutputStream outputStream = new FileOutputStream(testConfigFile)) {
+            outputStream.write(testConfig.getBytes(StandardCharsets.UTF_8));
+        } 
+
+
+        var newConf = KangoorooStandaloneRunner.loadKangoorooConfiguration(testConfigFile.getAbsolutePath(), baseConf);
+
+        log.debug(newConf.toString());
+        BrowserSetting testSetting = newConf.getBrowserSettings().get("TEST");
+        BrowserSetting defaultSetting =newConf.getBrowserSettings().get("DEFAULT");
+        assertEquals(defaultSetting.getUserAgent(), testSetting.getUserAgent());
+        assertEquals(defaultSetting.getWindowSize(), testSetting.getWindowSize());
         
 
     }

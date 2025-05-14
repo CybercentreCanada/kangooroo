@@ -244,7 +244,7 @@ public class KangoorooStandaloneRunner {
                             }
                         }
                         
-                        
+                        // load new settings
                         for (var set: newSettings.entrySet()) {
                             Map<String, Object> setting = yml.load(yml.dumpAsMap(set.getValue()));
 
