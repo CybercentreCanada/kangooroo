@@ -56,6 +56,8 @@ public class KangoorooRunnerConf {
         private String windowSize;
         @SerializedName(value = "request_headers")
         private Map<String, String> requestHeaders;
+        @SerializedName(value="time_zone")
+        private String timeZone;
 
     }
 

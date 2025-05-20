@@ -1,5 +1,6 @@
 package ca.gc.cyber.kangooroo.browser;
 
+import ca.gc.cyber.kangooroo.KangoorooRunnerConf;
 import ca.gc.cyber.kangooroo.KangoorooRunnerConf.BrowserSetting;
 import ca.gc.cyber.kangooroo.browser.chrome.ChromeExtender;
 import ca.gc.cyber.kangooroo.browser.chrome.CustomChromeDriver;
@@ -60,6 +61,7 @@ import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.Command;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -73,6 +75,7 @@ import com.browserup.bup.proxy.CaptureType;
 import com.browserup.harreader.model.Har;
 import com.browserup.harreader.model.HarEntry;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 
 public class KangoorooChromeBrowser extends KangoorooBrowser {
 
@@ -89,6 +92,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
             CaptureType.RESPONSE_BINARY_CONTENT
     };
 
+    private static final String TIMEZONE_OVERRIDE_COMMAND = "Emulation.setTimezoneOverride";
+
     // OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints
     private static final List<String> DISABLED_FEATURES = List.of("OptimizationGuideModelDownloading",
             "OptimizationHintsFetching",
@@ -103,6 +108,7 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
     private boolean saveOutputFiles = true;
 
     private File downloadFolder;
+
 
     public KangoorooChromeBrowser(File resultFolder, File tempFolder, Optional<InetSocketAddress> upstreamProxy,
             Optional<String> username, Optional<String> password, boolean useSandbox) {
@@ -125,6 +131,8 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         this.saveOutputFiles = saveOutputFiles;
     }
 
+
+
     @Override
     protected KangoorooResult execute(URL initialURL, BrowserSetting browserSetting) {
 
@@ -133,6 +141,11 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
         RemoteWebDriver driver = createDriver(browserSetting.getUserAgent(), browserSetting.getWindowSize(), tempFolder, 
         browserSetting.getRequestHeaders());
+        this.setDriverTimeZone(driver, browserSetting.getTimeZone());
+        log.error("LOOK AT THIS TIMEZONE: " + browserSetting.getTimeZone());
+
+        
+        
         AudioCaptchaSolver captchaSolver = new AudioCaptchaSolver(driver);
 
         KangoorooResult.CaptchaResult captResult = KangoorooResult.CaptchaResult.NONE;
@@ -670,6 +683,23 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
 
         return driver;
     }
+
+    private void setDriverTimeZone(RemoteWebDriver driver, String timezone){
+        if ((driver instanceof CustomChromeDriver) && timezone != null) {
+            CustomChromeDriver cd = (CustomChromeDriver) driver;
+            
+            Map<String, Object> exe = ImmutableMap.of("cmd", TIMEZONE_OVERRIDE_COMMAND, "params", timezone);
+            Command xc = new Command(cd.getSessionId(), "sendCommandWithResult", exe);
+            try {
+                cd.getCommandExecutor().execute(xc);
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
+            
+
+        } 
+    }
+
 
     private boolean isUnresponsive(WebDriver driver, int timeoutInSeconds) {
         try {
