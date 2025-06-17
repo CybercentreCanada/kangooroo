@@ -462,7 +462,7 @@ public class AudioCaptchaSolver {
         log.debug("Translate audio to text from file: " + audioPath);
 
         try {
-            var result = runProcess( "whisper", audioFile.getAbsolutePath(),
+            var result = runProcess( "/usr/bin/env","whisper", audioFile.getAbsolutePath(),
                     "--device", "cpu", "--fp16", "False", "--model", "small.en", "--output_dir", tempFolder.getAbsolutePath(),
                     "--output_format", "txt");
 
