@@ -81,12 +81,6 @@ jobs:
     name: Integration Test Kangooroo with Proxy
     runs-on: ubuntu-latest
 
-    services:
-      proxypy:
-        image: abhinavsingh/proxy.py
-        ports:
-          - 8899:8899
-
     steps:
       - uses: actions/checkout@v4.1.1
       - name: Set up JDK 11
@@ -94,6 +88,10 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
+      - name: Install and run tiny proxy
+        run: | 
+          sudo apt-get install tinyproxy
+          nohup tinyproxy -d -c test/integration_test/proxy.conf &
 
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -122,8 +120,7 @@ jobs:
       - name: Check if kangooroo connected to the proxy
         run: |
           sleep 10
-          docker logs "${{ job.services.proxypy.id }}" >& output3.txt
-          grep -qe "duckduckgo.com:443" output3.txt
+          grep -qe "opensock: opening connection to duckduckgo.com:443" tinyproxy.log
 
       - name: Check if tmp folder is empty
         run: ls -l tmp | grep -q "total 0" || exit 1
@@ -144,12 +141,6 @@ jobs:
     name: Integration Test Kangooroo with Proxy
     runs-on: ubuntu-latest
 
-    services:
-      proxypy:
-        image: abhinavsingh/proxy.py
-        ports:
-          - 8899:8899
-
     steps:
       - uses: actions/checkout@v4.1.1
       - name: Set up JDK 11
@@ -157,7 +148,10 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-
+      - name: Install and run tiny proxy
+        run: | 
+          sudo apt-get install tinyproxy
+          nohup tinyproxy -d -c test/integration_test/proxy.conf &
       - name: Build with Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -175,7 +169,7 @@ jobs:
         run: unzip -j KangoorooStandalone.zip KangoorooStandalone/lib/* -d lib && unzip -j KangoorooStandalone.zip KangoorooStandalone/bin/* -d bin
 
       - name: Run Kangooroo with Proxy and Sandbox
-        run: ./bin/kangooroo -mods summary --no-sandbox -cf test/integration_test/test_conf.yml --url https://duckduckgo.com/
+        run: ./bin/kangooroo -mods summary --no-sandbox -sr -cf test/integration_test/test_conf.yml --url https://duckduckgo.com/
 
       - name: Check all output files of Kangooroo is present
         run: |
@@ -185,8 +179,7 @@ jobs:
       - name: Check if kangooroo connected to the proxy
         run: |
           sleep 10
-          docker logs "${{ job.services.proxypy.id }}" >& output3.txt
-          grep -qe "duckduckgo.com:443" output3.txt
+          grep -qe "opensock: opening connection to duckduckgo.com:443" tinyproxy.log
 
       - name: Check if tmp folder is empty
         run: ls -l tmp | grep -q "total 0" || exit 1
