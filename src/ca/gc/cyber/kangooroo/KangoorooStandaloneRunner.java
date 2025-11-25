@@ -56,9 +56,7 @@ public class KangoorooStandaloneRunner {
     }
 
     private static List<String> filterString = List.of("https://accounts.google.com/ListAccounts",
-       "http://clients2.google.com/", 
-       "https://android.clients.google.com",
-       "https://www.google.com/async"
+       "http://clients2.google.com/"
     );
 
 
@@ -73,8 +71,8 @@ public class KangoorooStandaloneRunner {
 
         HarUtils.removeResponseEntries(result.getHar(), 0);
 
-        // Chromebrowser makes noisy requests that is unrelated to the URL for get.
-        // We will filter out these requests from the HAR file
+        // // Chromebrowser makes noisy requests that is unrelated to the URL for get.
+        // // We will filter out these requests from the HAR file
         HarUtils.removeRequestUrlEntries(result.getHar(), filterString);
 
         KangoorooURLReport kangoorooReport = null;
