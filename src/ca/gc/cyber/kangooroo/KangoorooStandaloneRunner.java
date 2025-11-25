@@ -55,6 +55,12 @@ public class KangoorooStandaloneRunner {
         return log;
     }
 
+    private static List<String> filterString = List.of("https://accounts.google.com/ListAccounts",
+       "http://clients2.google.com/",
+       "https://www.google.com/async/"
+    );
+
+
     public static KangoorooURLReport generateKangoorooReport(KangoorooResult result, Long processTime,
             URL url, String browserSettingName, BrowserSetting browserSetting, boolean sanitizeSession,
             List<String> messageLog) throws IOException {
@@ -66,10 +72,9 @@ public class KangoorooStandaloneRunner {
 
         HarUtils.removeResponseEntries(result.getHar(), 0);
 
-        // Chromebrowser makes noisy requests that is unrelated to the URL for get.
-        // We will filter out these requests from the HAR file
-        HarUtils.removeRequestUrlEntries(result.getHar(), "https://accounts.google.com/ListAccounts");
-        HarUtils.removeRequestUrlEntries(result.getHar(), "http://clients2.google.com/");
+        // // Chromebrowser makes noisy requests that is unrelated to the URL for get.
+        // // We will filter out these requests from the HAR file
+        HarUtils.removeRequestUrlEntries(result.getHar(), filterString);
 
         KangoorooURLReport kangoorooReport = null;
 
