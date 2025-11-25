@@ -413,7 +413,15 @@ public class HarUtils {
             .collect(Collectors.toList())
         );
 
+    }
 
+    public static void removeRequestUrlEntries(Har har, List<String> patterns) {
+                List<HarEntry> oldEntries = har.getLog().getEntries();
+
+        har.getLog().setEntries(
+            oldEntries.stream().filter(entry -> !patterns.stream().anyMatch(x -> entry.getRequest().getUrl().contains(x)))
+            .collect(Collectors.toList())
+        );
     }
 
     public static void removeResponseEntries(Har har, int code) {
