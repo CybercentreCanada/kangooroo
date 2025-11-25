@@ -56,7 +56,8 @@ public class KangoorooStandaloneRunner {
     }
 
     private static List<String> filterString = List.of("https://accounts.google.com/ListAccounts",
-       "http://clients2.google.com/"
+       "http://clients2.google.com/",
+       "https://www.google.com/async/"
     );
 
 
