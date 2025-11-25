@@ -597,6 +597,14 @@ public class KangoorooChromeBrowser extends KangoorooBrowser {
         options.addArguments("--ash-no-nudges");
         options.addArguments("--disable-search-engine-choice-screen");
         options.addArguments("--enable-automation");
+        
+        // add more prints in the chrome debug log
+        options.addArguments("--debug-print");
+
+        // to resolve issue #43
+        options.addArguments("--gcm-checkin-url=\"\"");
+        options.addArguments("--gcm-registration-url=\"\"");
+        options.addArguments("--gcm-mcs-endpoint=\"\"");
 
         // remove a few mroe annoying network call
         options.addArguments("--incognito");
