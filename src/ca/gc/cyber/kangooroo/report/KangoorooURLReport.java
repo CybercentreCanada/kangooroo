@@ -84,7 +84,7 @@ public class KangoorooURLReport {
     }
 
     @Data 
-    class Experimentation {
+    public class Experimentation {
         Map<String, String> engineInfo;
         Parameters params;
         Execution execution;
@@ -106,7 +106,7 @@ public class KangoorooURLReport {
 
         @Data
         @AllArgsConstructor
-        class Parameters {
+        public class Parameters {
             String url;
             String browserSettingName;
             String windowSize;
@@ -119,7 +119,7 @@ public class KangoorooURLReport {
         
         @Data 
         @AllArgsConstructor
-        class Execution {
+        public class Execution {
             String status;
             List<String> messages;
             String startTime;
@@ -131,7 +131,7 @@ public class KangoorooURLReport {
 
     @Data
     @AllArgsConstructor
-    class Summary {
+    public class Summary {
 
         Map<String, Object> fetchResult;
         KangoorooURL requestedUrl;
@@ -146,7 +146,7 @@ public class KangoorooURLReport {
 
     @Data
     @AllArgsConstructor
-    class Captcha {
+    public class Captcha {
         Boolean isPresent;
         String service;
         Boolean solved;
