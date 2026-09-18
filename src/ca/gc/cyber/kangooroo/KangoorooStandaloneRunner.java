@@ -74,7 +74,7 @@ public class KangoorooStandaloneRunner {
 
         // // Chromebrowser makes noisy requests that is unrelated to the URL for get.
         // // We will filter out these requests from the HAR file
-        HarUtils.removeRequestUrlEntries(result.getHar(), filterString);
+        // HarUtils.removeRequestUrlEntries(result.getHar(), filterString);
 
         KangoorooURLReport kangoorooReport = null;
 
