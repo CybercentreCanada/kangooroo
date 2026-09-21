@@ -11,5 +11,6 @@
         </Root>
     <logger name="com.browserup.bup.BrowserUpProxyServer" level="OFF"/>
     </Loggers>
-
+    <Logger name="org.littleshoot.proxy.impl.ProxyToServerConnection" level="WARN">
+    </Loggers>
 </Configuration>
